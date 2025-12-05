@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const taskController = require('../controllers/taskController');
+const requireAuth = require('../middleware/authMiddleware');
+
+// Protect all routes below this line
+router.use(requireAuth);
+
 
 // Routes
 router.get('/', taskController.getTasks);
