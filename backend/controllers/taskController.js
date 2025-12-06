@@ -4,7 +4,7 @@ const validateTaskInput = require('../utils/validateTask');
 // Get all tasks
 const getTasks = async (req, res) => {
     try {
-        const tasks = await taskModel.getAllTasks();
+        const tasks = await taskModel.getAllTasks(req.user.id);
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ error: err.message});
