@@ -14,20 +14,22 @@ const getTasks = async (req, res) => {
 // Get task by ID 
 const getTask = async (req, res) => {
     try {
-        const filters = {
-            completed: req.query.completed,
-            search: req.query.search,
-            sort: req.query.sort,
-            order: req.query.order,
-            userId: req.user.id
-        };
+        // Ask the model for a task owned by THIS user
+        const task = await taskModel.getTaskById(req.params.id, req.user.id);
 
-        const tasks = await taskModel.getFilteredTasks(filters);
-        res.json(tasks);
+        // If no task found OR it doesn't belong to the user → 404
+        if (!task) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // Return the task
+        res.json(task);
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 
 // Create a new task
@@ -62,7 +64,8 @@ const updateTask = async (req, res) => {
             req.params.id,
             title,
             description,
-            completed
+            completed,
+            req.user.id
         );
 
         if (!updatedTask) {
@@ -76,18 +79,26 @@ const updateTask = async (req, res) => {
 };
 
 // Delete a task
-const deleteTask =async (req, res) => {
+const deleteTask = async (req, res) => {
     try {
-        await taskModel.deleteTask(req.params.id);
+        const deletedTask = await taskModel.deleteTask(req.params.id, req.user.id);
+
+        // If task does not exist OR does not belong to the user
+        if (!deletedTask) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
         res.json({ message: 'Task deleted successfully' });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
+
 const toggleTaskCompleted = async (req, res) => {
     try {
-        const task = await taskModel.toggleCompleted(req.params.id);
+        const task = await taskModel.toggleCompleted(req.params.id, req.user.id);
         if (!task) return res.status(404).json({ error: "Task not found" });
         res.json(task);
     } catch (err) {

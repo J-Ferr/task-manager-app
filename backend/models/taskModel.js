@@ -7,10 +7,14 @@ const getAllTasks = async () => {
 };
 
 // Get a task by ID 
-const getTaskById = async (id) => {
-    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+const getTaskById = async (id, userId) => {
+    const result = await pool.query(
+        'SELECT * FROM tasks WHERE id = $1 AND user_id = $2',
+        [id, userId]
+    );
     return result.rows[0];
 };
+
 
 // Create a new task 
 const createTask = async (title, description, userId) => {
@@ -23,25 +27,32 @@ const createTask = async (title, description, userId) => {
 
 
 // Update a task
-const updateTask = async (id, title, description, completed) => {
-    const result = await pool.query('UPDATE tasks SET title = $1, description = $2, completed = $3 WHERE id = $4 RETURNING *', [title, description, completed, id]);
+const updateTask = async (id, title, description, completed, userId) => {
+    const result = await pool.query(
+        'UPDATE tasks SET title = $1, description = $2, completed = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+        [title, description, completed, id, userId]
+    );
     return result.rows[0];
 };
 
 // Delete a task
-const deleteTask = async (id) => {
-    await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
-    return { message: 'Task deleted successfully' };
-};
-
-// Toggle completed
-const toggleCompleted = async (id) => {
+const deleteTask = async (id, userId) => {
     const result = await pool.query(
-        'UPDATE tasks SET completed = NOT completed WHERE id = $1 RETURNING *',
-        [id]
+        'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
     );
     return result.rows[0];
 };
+
+// Toggle completed
+const toggleTaskCompleted = async (id, userId) => {
+    const result = await pool.query(
+        'UPDATE tasks SET completed = NOT completed WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
+    );
+    return result.rows[0];
+};
+
 
 // Get tasks with filters
 const getFilteredTasks = async (filters) => {
