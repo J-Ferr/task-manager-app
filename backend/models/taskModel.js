@@ -99,6 +99,6 @@ module.exports = {
     createTask,
     updateTask,
     deleteTask,
-    toggleCompleted,
+    toggleTaskCompleted,
     getFilteredTasks
 };

@@ -98,13 +98,14 @@ const deleteTask = async (req, res) => {
 
 const toggleTaskCompleted = async (req, res) => {
     try {
-        const task = await taskModel.toggleCompleted(req.params.id, req.user.id);
+        const task = await taskModel.toggleTaskCompleted(req.params.id, req.user.id);
         if (!task) return res.status(404).json({ error: "Task not found" });
         res.json(task);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 module.exports = {
     getTasks,
