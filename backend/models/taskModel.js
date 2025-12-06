@@ -1,10 +1,14 @@
 const pool = require('../db');
 
 // Get all tasks
-const getAllTasks = async () => {
-    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+const getAllTasks = async (userId) => {
+    const result = await pool.query(
+        'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+    );
     return result.rows;
 };
+
 
 // Get a task by ID 
 const getTaskById = async (id, userId) => {
