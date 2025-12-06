@@ -13,10 +13,14 @@ const getTaskById = async (id) => {
 };
 
 // Create a new task 
-const createTask = async (title, description) => {
-    const result = await pool.query('INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING *', [title, description]);
+const createTask = async (title, description, userId) => {
+    const result = await pool.query(
+        'INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING *',
+        [title, description, userId]
+    );
     return result.rows[0];
 };
+
 
 // Update a task
 const updateTask = async (id, title, description, completed) => {
@@ -44,6 +48,10 @@ const getFilteredTasks = async (filters) => {
     let query = 'SELECT * FROM tasks';
     const values = [];
     const conditions = [];
+
+    // ALWAYS filter by the logged-in user's ID
+    conditions.push(`user_id = $${values.length + 1}`);
+    values.push(filters.userId);
 
     // Filter by completed
     if (filters.completed !== undefined) {

@@ -18,7 +18,8 @@ const getTask = async (req, res) => {
             completed: req.query.completed,
             search: req.query.search,
             sort: req.query.sort,
-            order: req.query.order
+            order: req.query.order,
+            userId: req.user.id
         };
 
         const tasks = await taskModel.getFilteredTasks(filters);
@@ -39,7 +40,7 @@ const createTask = async (req, res) => {
             return res.status(400).json({ error: validationError });
         }
 
-        const newTask = await taskModel.createTask(title, description);
+        const newTask = await taskModel.createTask(title, description, req.user.id);
         res.status(201).json(newTask);
     } catch (err) {
         res.status(500).json({ error: err.message });
