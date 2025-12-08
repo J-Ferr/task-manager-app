@@ -74,7 +74,8 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="min-h-screen p-6 max-w-3xl mx-auto bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+
 
       <Navbar />
 
@@ -91,46 +92,61 @@ export default function Dashboard() {
 
 
       {/* FILTER + SORT BAR */}
-      <div className="flex items-center space-x-3 mb-6">
-        
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
-          onClick={() => setFilter("all")}
-        >
-          All
-        </button>
+<div className="flex items-center space-x-3 mb-6">
 
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "completed" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
-          onClick={() => setFilter("completed")}
-        >
-          Completed
-        </button>
+  {/* FILTER BUTTON — ALL */}
+  <button
+    className={`
+      px-3 py-1 rounded transition-colors
+      ${filter === "all"
+        ? "bg-blue-600 text-white"
+        : "bg-gray-200 dark:bg-gray-700 dark:text-gray-200"}
+    `}
+    onClick={() => setFilter("all")}
+  >
+    All
+  </button>
 
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "pending" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
-          onClick={() => setFilter("pending")}
-        >
-          Pending
-        </button>
+  {/* FILTER BUTTON — COMPLETED */}
+  <button
+    className={`
+      px-3 py-1 rounded transition-colors
+      ${filter === "completed"
+        ? "bg-blue-600 text-white"
+        : "bg-gray-200 dark:bg-gray-700 dark:text-gray-200"}
+    `}
+    onClick={() => setFilter("completed")}
+  >
+    Completed
+  </button>
 
-        <select
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-          className="border p-2 rounded ml-auto"
-        >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="az">A → Z</option>
-          <option value="completed">Completed First</option>
-        </select>
-      </div>
+  {/* FILTER BUTTON — PENDING */}
+  <button
+    className={`
+      px-3 py-1 rounded transition-colors
+      ${filter === "pending"
+        ? "bg-blue-600 text-white"
+        : "bg-gray-200 dark:bg-gray-700 dark:text-gray-200"}
+    `}
+    onClick={() => setFilter("pending")}
+  >
+    Pending
+  </button>
+
+  {/* SORT DROPDOWN */}
+  <select
+    value={sortOption}
+    onChange={(e) => setSortOption(e.target.value)}
+    className="border p-2 rounded ml-auto bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 transition-colors"
+  >
+    <option value="newest">Newest</option>
+    <option value="oldest">Oldest</option>
+    <option value="az">A → Z</option>
+    <option value="completed">Completed First</option>
+  </select>
+
+</div>
+
 
       {/* Create Task Form */}
       <form
@@ -150,7 +166,7 @@ export default function Dashboard() {
             console.error("Error creating task:", err);
           }
         }}
-        className="mb-8 bg-white p-4 rounded shadow border"
+        className="mb-8 bg-white dark:bg-gray-800 dark:border-gray-700 p-4 rounded shadow border transition-colors"
       >
         <h2 className="text-lg font-semibold mb-3">Create a New Task</h2>
 

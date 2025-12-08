@@ -10,7 +10,7 @@ export default function EditModal({
   if (!editingTask) return null;
 
   return (
-    <div className="mb-8 bg-white p-4 rounded shadow border">
+    <div className="mb-8 bg-white dark:bg-gray-800 dark:border-gray-700 p-4 rounded shadow border transition-colors">
       <h2 className="text-lg font-semibold mb-3">Edit Task</h2>
 
       <input

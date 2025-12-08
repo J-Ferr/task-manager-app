@@ -10,6 +10,7 @@ export default function Navbar() {
 
   return (
     <nav className="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-4 shadow rounded">
+
       <h1 className="text-2xl font-bold dark:text-white">Task Manager</h1>
 
       <div className="flex items-center space-x-3">

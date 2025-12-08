@@ -1,6 +1,6 @@
 export default function TaskItem({ task, onToggle, onEdit, onDelete }) {
   return (
-    <li className="border p-3 rounded shadow-sm bg-white flex justify-between items-center">
+    <li className="border p-3 rounded shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700 flex justify-between items-center transition-colors">
       <div>
         <h2 className="font-semibold text-lg">{task.title}</h2>
         <p className="text-gray-600">{task.description}</p>
