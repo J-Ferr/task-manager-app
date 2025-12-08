@@ -1,7 +1,9 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import axiosClient from "../api/axiosClient";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+
+import Navbar from "../components/Navbar";
+import TaskItem from "../components/TaskItem";
+import EditModal from "../components/EditModal";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -20,11 +22,6 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [sortOption, setSortOption] = useState("newest");
 
-  // Auth
-  const { logout } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  // Fetch tasks
   const fetchTasks = async () => {
     try {
       const res = await axiosClient.get("/tasks");
@@ -52,7 +49,7 @@ export default function Dashboard() {
   const filteredTasks = tasks.filter((task) => {
     if (filter === "completed") return task.completed;
     if (filter === "pending") return !task.completed;
-    return true; // all
+    return true;
   });
 
   // SORTING
@@ -67,25 +64,11 @@ export default function Dashboard() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
 
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Your Tasks</h1>
-
-        {/* Logout */}
-        <button
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-          className="bg-red-500 text-white px-3 py-1 rounded"
-        >
-          Logout
-        </button>
-      </div>
+      <Navbar />
 
       {/* FILTER + SORT BAR */}
       <div className="flex items-center space-x-3 mb-6">
-        {/* Filter Buttons */}
+        
         <button
           className={`px-3 py-1 rounded ${
             filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"
@@ -113,7 +96,6 @@ export default function Dashboard() {
           Pending
         </button>
 
-        {/* Sort Dropdown */}
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
@@ -169,49 +151,24 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* Edit Task Modal */}
-      {editingTask && (
-        <div className="mb-8 bg-white p-4 rounded shadow border">
-          <h2 className="text-lg font-semibold mb-3">Edit Task</h2>
-
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="border p-2 w-full mb-3 rounded"
-          />
-
-          <textarea
-            value={editDesc}
-            onChange={(e) => setEditDesc(e.target.value)}
-            className="border p-2 w-full mb-3 rounded"
-          />
-
-          <div className="flex space-x-2">
-            <button
-              onClick={async () => {
-                await axiosClient.put(`/tasks/${editingTask.id}`, {
-                  title: editTitle,
-                  description: editDesc,
-                  completed: editingTask.completed,
-                });
-                setEditingTask(null);
-                fetchTasks();
-              }}
-              className="bg-green-600 text-white px-4 py-2 rounded w-full"
-            >
-              Save Changes
-            </button>
-
-            <button
-              onClick={() => setEditingTask(null)}
-              className="bg-gray-400 text-white px-4 py-2 rounded w-full"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Edit Modal */}
+      <EditModal
+        editingTask={editingTask}
+        editTitle={editTitle}
+        setEditTitle={setEditTitle}
+        editDesc={editDesc}
+        setEditDesc={setEditDesc}
+        onSave={async () => {
+          await axiosClient.put(`/tasks/${editingTask.id}`, {
+            title: editTitle,
+            description: editDesc,
+            completed: editingTask.completed,
+          });
+          setEditingTask(null);
+          fetchTasks();
+        }}
+        onCancel={() => setEditingTask(null)}
+      />
 
       {/* Task List */}
       {sortedTasks.length === 0 ? (
@@ -219,55 +176,19 @@ export default function Dashboard() {
       ) : (
         <ul className="space-y-3">
           {sortedTasks.map((task) => (
-            <li
+            <TaskItem
               key={task.id}
-              className="border p-3 rounded shadow-sm bg-white flex justify-between items-center"
-            >
-              <div>
-                <h2 className="font-semibold text-lg">{task.title}</h2>
-                <p className="text-gray-600">{task.description}</p>
-                <p className="text-sm mt-1">
-                  Status:{" "}
-                  <span className={task.completed ? "text-green-600" : "text-red-600"}>
-                    {task.completed ? "Completed" : "Pending"}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex space-x-2">
-                {/* Toggle Completed */}
-                <button
-                  onClick={async () => {
-                    await axiosClient.patch(`/tasks/${task.id}/toggle`);
-                    fetchTasks();
-                  }}
-                  className={`px-3 py-1 rounded ${
-                    task.completed ? "bg-yellow-500" : "bg-green-500"
-                  } text-white`}
-                >
-                  {task.completed ? "Unmark" : "Complete"}
-                </button>
-
-                {/* Edit */}
-                <button
-                  onClick={() => startEditing(task)}
-                  className="px-3 py-1 bg-indigo-500 text-white rounded"
-                >
-                  Edit
-                </button>
-
-                {/* Delete */}
-                <button
-                  onClick={async () => {
-                    await axiosClient.delete(`/tasks/${task.id}`);
-                    fetchTasks();
-                  }}
-                  className="px-3 py-1 bg-red-500 text-white rounded"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
+              task={task}
+              onToggle={async () => {
+                await axiosClient.patch(`/tasks/${task.id}/toggle`);
+                fetchTasks();
+              }}
+              onEdit={() => startEditing(task)}
+              onDelete={async () => {
+                await axiosClient.delete(`/tasks/${task.id}`);
+                fetchTasks();
+              }}
+            />
           ))}
         </ul>
       )}
