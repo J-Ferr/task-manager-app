@@ -10,8 +10,12 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   return (
-    <nav className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 shadow mb-6">
-      <h1 onClick={() => navigate("/")} className="text-2xl font-bold dark:text-white cursor-pointer">
+    <nav className="flex justify-between items-center bg-gray-800 dark:bg-gray-900 text-white p-4 shadow mb-6">
+
+      <h1
+        onClick={() => navigate("/")}
+        className="text-2xl font-bold cursor-pointer"
+      >
         Task Manager
       </h1>
 
@@ -19,7 +23,7 @@ export default function Navbar() {
 
         <button
           onClick={toggleTheme}
-          className="px-3 py-1 bg-gray-700 text-white rounded"
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white"
         >
           {darkMode ? "Light Mode" : "Dark Mode"}
         </button>
@@ -30,7 +34,7 @@ export default function Navbar() {
             toast.success("Logged out");
             navigate("/login");
           }}
-          className="px-3 py-1 bg-red-600 text-white rounded"
+          className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded"
         >
           Logout
         </button>
@@ -38,6 +42,4 @@ export default function Navbar() {
     </nav>
   );
 }
-
-
 
