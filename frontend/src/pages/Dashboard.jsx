@@ -22,6 +22,10 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [sortOption, setSortOption] = useState("newest");
 
+  // Searchbar
+  const [searchQuery, setSearchQuery] = useState("");
+
+
   const fetchTasks = async () => {
     try {
       const res = await axiosClient.get("/tasks");
@@ -47,10 +51,18 @@ export default function Dashboard() {
 
   // FILTERING
   const filteredTasks = tasks.filter((task) => {
-    if (filter === "completed") return task.completed;
-    if (filter === "pending") return !task.completed;
-    return true;
-  });
+  const matchesFilter =
+    (filter === "completed" && task.completed) ||
+    (filter === "pending" && !task.completed) ||
+    filter === "all";
+
+  const matchesSearch = task.title
+    .toLowerCase()
+    .includes(searchQuery.toLowerCase());
+
+  return matchesFilter && matchesSearch;
+});
+
 
   // SORTING
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -65,6 +77,18 @@ export default function Dashboard() {
     <div className="p-6 max-w-3xl mx-auto">
 
       <Navbar />
+
+      {/* SEARCH BAR */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="border p-2 rounded w-full"
+        />
+      </div>
+
 
       {/* FILTER + SORT BAR */}
       <div className="flex items-center space-x-3 mb-6">
