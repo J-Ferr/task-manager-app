@@ -1,6 +1,6 @@
 const pool = require('../db');
 
-// Get all tasks
+// Get all tasks (unused now but keeping it)
 const getAllTasks = async (userId) => {
     const result = await pool.query(
         'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC',
@@ -8,7 +8,6 @@ const getAllTasks = async (userId) => {
     );
     return result.rows;
 };
-
 
 // Get a task by ID 
 const getTaskById = async (id, userId) => {
@@ -19,7 +18,6 @@ const getTaskById = async (id, userId) => {
     return result.rows[0];
 };
 
-
 // Create a new task 
 const createTask = async (title, description, userId) => {
     const result = await pool.query(
@@ -28,7 +26,6 @@ const createTask = async (title, description, userId) => {
     );
     return result.rows[0];
 };
-
 
 // Update a task
 const updateTask = async (id, title, description, completed, userId) => {
@@ -57,40 +54,30 @@ const toggleTaskCompleted = async (id, userId) => {
     return result.rows[0];
 };
 
-
-// Get tasks with filters
-const getFilteredTasks = async (filters) => {
-    let query = 'SELECT * FROM tasks';
-    const values = [];
-    const conditions = [];
-
-    // ALWAYS filter by the logged-in user's ID
-    conditions.push(`user_id = $${values.length + 1}`);
-    values.push(filters.userId);
+// Get tasks with filters (THE FIXED VERSION)
+const getFilteredTasks = async (userId, search, completed, sort) => {
+    let query = 'SELECT * FROM tasks WHERE user_id = $1';
+    const values = [userId];
+    let paramIndex = 2;
 
     // Filter by completed
-    if (filters.completed !== undefined) {
-        conditions.push(`completed = $${values.length + 1}`);
-        values.push(filters.completed === 'true');
+    if (completed !== null) {
+        query += ` AND completed = $${paramIndex++}`;
+        values.push(completed);
     }
 
-    // Search in title or description
-    if (filters.search) {
-        conditions.push(`(title ILIKE $${values.length + 1} OR description ILIKE $${values.length + 1})`);
-        values.push(`%${filters.search}%`);
-    }
-
-    // Apply WHERE conditions
-    if (conditions.length > 0) {
-        query += 'WHERE ' + conditions.join(' AND ');
+    // Search filter
+    if (search) {
+        query += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+        values.push(`%${search}%`);
+        paramIndex++;
     }
 
     // Sorting
-    if (filters.sort) {
-        const order = filters.order === 'desc' ? 'DESC' : 'ASC';
-        query += ` ORDER BY ${filters.sort} ${order}`;
+    if (sort === "oldest") {
+        query += ` ORDER BY created_at ASC`;
     } else {
-        query += ' ORDER BR created_at DESC';
+        query += ` ORDER BY created_at DESC`;
     }
 
     const result = await pool.query(query, values);
@@ -106,3 +93,4 @@ module.exports = {
     toggleTaskCompleted,
     getFilteredTasks
 };
+

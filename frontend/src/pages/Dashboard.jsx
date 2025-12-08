@@ -14,22 +14,33 @@ export default function Dashboard() {
   const [sort, setSort] = useState("newest");
 
   const fetchTasks = async () => {
-    try {
-      const res = await axiosClient.get("/tasks", {
-        params: {
-          search,
-          sort,
-          completed: filter === "all" ? undefined : filter === "completed",
-        },
-      });
-      setTasks(res.data);
-    } catch (err) {
-      console.error("Error fetching tasks:", err);
-      toast.error("Unable to load tasks");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const completed =
+      filter === "all"
+        ? null
+        : filter === "completed"
+        ? true
+        : false;
+
+    console.log("Sending filter value:", completed);
+
+    const res = await axiosClient.get("/tasks", {
+      params: {
+        search,
+        sort,
+        completed,
+      },
+    });
+
+    setTasks(res.data);
+  } catch (err) {
+    console.error("Error fetching tasks:", err);
+    toast.error("Unable to load tasks");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchTasks();

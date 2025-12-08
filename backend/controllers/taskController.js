@@ -1,36 +1,44 @@
-const taskModel =require('../models/taskModel');
+const taskModel = require('../models/taskModel');
 const validateTaskInput = require('../utils/validateTask');
 
-// Get all tasks
+// Get all tasks (with filtering)
 const getTasks = async (req, res) => {
     try {
-        const tasks = await taskModel.getAllTasks(req.user.id);
+        let { search, sort, completed } = req.query;
+
+        // Convert completed from string → boolean or null
+        if (completed === "true") completed = true;
+        else if (completed === "false") completed = false;
+        else completed = null;
+
+        const tasks = await taskModel.getFilteredTasks(
+            req.user.id,
+            search || null,
+            completed,
+            sort || "newest"
+        );
+
         res.json(tasks);
     } catch (err) {
-        res.status(500).json({ error: err.message});
+        res.status(500).json({ error: err.message });
     }
 };
 
 // Get task by ID 
 const getTask = async (req, res) => {
     try {
-        // Ask the model for a task owned by THIS user
         const task = await taskModel.getTaskById(req.params.id, req.user.id);
 
-        // If no task found OR it doesn't belong to the user → 404
         if (!task) {
             return res.status(404).json({ error: 'Task not found' });
         }
 
-        // Return the task
         res.json(task);
 
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
-
-
 
 // Create a new task
 const createTask = async (req, res) => {
@@ -47,7 +55,6 @@ const createTask = async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-        
 };
 
 // Update a task
@@ -83,7 +90,6 @@ const deleteTask = async (req, res) => {
     try {
         const deletedTask = await taskModel.deleteTask(req.params.id, req.user.id);
 
-        // If task does not exist OR does not belong to the user
         if (!deletedTask) {
             return res.status(404).json({ error: 'Task not found' });
         }
@@ -95,7 +101,7 @@ const deleteTask = async (req, res) => {
     }
 };
 
-
+// Toggle completed status
 const toggleTaskCompleted = async (req, res) => {
     try {
         const task = await taskModel.toggleTaskCompleted(req.params.id, req.user.id);
@@ -105,7 +111,6 @@ const toggleTaskCompleted = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 module.exports = {
     getTasks,
