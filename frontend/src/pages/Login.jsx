@@ -3,6 +3,8 @@ import axiosClient from "../api/axiosClient";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +19,17 @@ export default function Login() {
 
     try {
       const res = await axiosClient.post("/auth/login", { email, password });
+
+      // SUCCESS MESSAGE - right after the successful login
+      toast.success("Login successful!");
+
       login(res.data.token);
       navigate("/");
     } catch (err) {
-      setError("Invalid credentials");
+      console.error(err);
+
+      // ERROR MESSAGE - inside catch block
+      toast.error("Invalid email or password");
     }
   };
 

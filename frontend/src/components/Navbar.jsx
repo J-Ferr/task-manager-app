@@ -28,6 +28,9 @@ export default function Navbar() {
           onClick={() => {
             logout();
             navigate("/login");
+
+            // LOGGED OUT
+            toast.success("Logged out");
           }}
           className="bg-red-500 text-white px-3 py-1 rounded"
         >
