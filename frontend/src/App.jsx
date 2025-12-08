@@ -1,30 +1,32 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { createContext, useState, useEffect } from "react";
 
-function App() {
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [user, setUser] = useState(null);
+
+  const login = (token) => {
+    localStorage.setItem("token", token);
+    setToken(token);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+  };
+
+  useEffect(() => {
+    if (!token) return;
+
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    setUser({ userId: payload.userId });
+  }, [token]);
+
   return (
-    <Router>
-      <Routes>
-        {/* Public Pages */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-
-        {/* Protected Page */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <AuthContext.Provider value={{ token, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
-}
-
-export default App;
-
+};

@@ -6,12 +6,19 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Create
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
+  // Filters / Search / Sort
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
+
+  // Editing
+  const [editingTask, setEditingTask] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
 
   const fetchTasks = async () => {
     try {
@@ -61,12 +68,14 @@ export default function Dashboard() {
     }
   };
 
-  // Toggle Task
+  // Toggle Completed
   const handleToggle = async (task) => {
     try {
       await axiosClient.patch(`/tasks/${task.id}/toggle`);
 
-      toast.success(task.completed ? "Marked as pending" : "Marked as completed");
+      toast.success(
+        task.completed ? "Marked as pending" : "Marked as completed"
+      );
 
       fetchTasks();
     } catch (err) {
@@ -89,6 +98,30 @@ export default function Dashboard() {
     }
   };
 
+  // Update Task (Edit)
+  const handleUpdateTask = async (e) => {
+    e.preventDefault();
+
+    if (!editTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    try {
+      await axiosClient.put(`/tasks/${editingTask.id}`, {
+        title: editTitle,
+        description: editDesc,
+      });
+
+      toast.success("Task updated!");
+      setEditingTask(null);
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update task");
+    }
+  };
+
   if (loading) return <p className="p-6">Loading tasks...</p>;
 
   return (
@@ -96,7 +129,7 @@ export default function Dashboard() {
 
       <h1 className="text-3xl font-bold mb-6">Your Tasks</h1>
 
-      {/* Create Task Form */}
+      {/* CREATE TASK */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
         <input
           className="w-full p-3 bg-gray-100 dark:bg-gray-800 rounded"
@@ -120,11 +153,13 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* Filtering + Sorting */}
+      {/* FILTERS */}
       <div className="flex gap-3 mb-4">
         <button
           className={`px-3 py-1 rounded ${
-            filter === "all" ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"
+            filter === "all"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 dark:bg-gray-700"
           }`}
           onClick={() => setFilter("all")}
         >
@@ -133,7 +168,9 @@ export default function Dashboard() {
 
         <button
           className={`px-3 py-1 rounded ${
-            filter === "completed" ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"
+            filter === "completed"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 dark:bg-gray-700"
           }`}
           onClick={() => setFilter("completed")}
         >
@@ -142,7 +179,9 @@ export default function Dashboard() {
 
         <button
           className={`px-3 py-1 rounded ${
-            filter === "pending" ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"
+            filter === "pending"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 dark:bg-gray-700"
           }`}
           onClick={() => setFilter("pending")}
         >
@@ -150,7 +189,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Search + Sort */}
+      {/* SEARCH + SORT */}
       <div className="flex gap-3 mb-6">
         <input
           placeholder="Search tasks..."
@@ -169,7 +208,7 @@ export default function Dashboard() {
         </select>
       </div>
 
-      {/* Task List */}
+      {/* TASK LIST */}
       {tasks.length === 0 ? (
         <p className="text-gray-500 text-center">No tasks found.</p>
       ) : (
@@ -181,7 +220,9 @@ export default function Dashboard() {
             >
               <div>
                 <h2 className="font-semibold text-lg">{task.title}</h2>
-                <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {task.description}
+                </p>
 
                 <span
                   className={`text-sm block mt-2 ${
@@ -201,6 +242,17 @@ export default function Dashboard() {
                 </button>
 
                 <button
+                  onClick={() => {
+                    setEditingTask(task);
+                    setEditTitle(task.title);
+                    setEditDesc(task.description);
+                  }}
+                  className="px-2 py-1 bg-blue-600 text-white rounded"
+                >
+                  Edit
+                </button>
+
+                <button
                   onClick={() => handleDelete(task.id)}
                   className="px-2 py-1 bg-red-600 text-white rounded"
                 >
@@ -211,9 +263,46 @@ export default function Dashboard() {
           ))}
         </ul>
       )}
+
+      {/* EDIT MODAL */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Edit Task</h2>
+
+            <form onSubmit={handleUpdateTask} className="space-y-3">
+              <input
+                className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+
+              <textarea
+                className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+              />
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
-

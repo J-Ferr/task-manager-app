@@ -8,40 +8,39 @@ import toast from "react-hot-toast";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     try {
-      const res = await axiosClient.post("/auth/login", { email, password });
+      const response = await axiosClient.post("/auth/login", {
+        email,
+        password,
+      });
 
-      // SUCCESS MESSAGE - right after the successful login
-      toast.success("Login successful!");
+      toast.success("Welcome back!");
 
-      login(res.data.token);
+      // Update AuthContext properly
+      login(response.data.token);
+
       navigate("/");
-    } catch (err) {
-      console.error(err);
-
-      // ERROR MESSAGE - inside catch block
-      toast.error("Invalid email or password");
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Invalid login credentials.";
+      toast.error(message);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <form 
-        onSubmit={handleSubmit} 
+      <form
+        onSubmit={handleSubmit}
         className="bg-white p-6 rounded shadow-md w-80"
       >
         <h2 className="text-xl font-bold mb-4">Login</h2>
-
-        {error && <p className="text-red-500 mb-2">{error}</p>}
 
         <input
           type="email"
@@ -75,3 +74,4 @@ export default function Login() {
     </div>
   );
 }
+

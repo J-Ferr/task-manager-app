@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { ThemeContext } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function Navbar() {
   const { logout } = useContext(AuthContext);
@@ -9,30 +10,27 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   return (
-    <nav className="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-4 shadow rounded">
+    <nav className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 shadow mb-6">
+      <h1 onClick={() => navigate("/")} className="text-2xl font-bold dark:text-white cursor-pointer">
+        Task Manager
+      </h1>
 
-      <h1 className="text-2xl font-bold dark:text-white">Task Manager</h1>
+      <div className="flex items-center space-x-4">
 
-      <div className="flex items-center space-x-3">
-
-        {/* Dark Mode Toggle */}
         <button
           onClick={toggleTheme}
-          className="px-3 py-1 rounded bg-gray-600 text-white"
+          className="px-3 py-1 bg-gray-700 text-white rounded"
         >
           {darkMode ? "Light Mode" : "Dark Mode"}
         </button>
 
-        {/* Logout */}
         <button
           onClick={() => {
             logout();
-            navigate("/login");
-
-            // LOGGED OUT
             toast.success("Logged out");
+            navigate("/login");
           }}
-          className="bg-red-500 text-white px-3 py-1 rounded"
+          className="px-3 py-1 bg-red-600 text-white rounded"
         >
           Logout
         </button>
@@ -40,3 +38,6 @@ export default function Navbar() {
     </nav>
   );
 }
+
+
+

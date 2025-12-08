@@ -12,23 +12,25 @@ export default function Register() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
 
-    try {
-      await axiosClient.post("/auth/register", { email, password });
+  try {
+    await axios.post(`${API_URL}/auth/register`, {
+      username,
+      email,
+      password,
+    });
 
-      // SUCCESS MESSAGE
-      toast.success("Account created!");
+    toast.success("Account created successfully!");
+    navigate("/login");
 
-      navigate("/login");
-    } catch (err) {
-      console.error(err);
+  } catch (error) {
+    const message =
+      error?.response?.data?.message || "Registration failed.";
+    toast.error(message);
+  }
+};
 
-      // ERROR MESSAGE
-      toast.error("Soemthing went wrong. Try again.");
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">

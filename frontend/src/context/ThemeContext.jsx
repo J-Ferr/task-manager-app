@@ -12,10 +12,8 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  const toggleTheme = () => setDarkMode((prev) => !prev);
-
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ darkMode, toggleTheme: () => setDarkMode(v => !v) }}>
       {children}
     </ThemeContext.Provider>
   );

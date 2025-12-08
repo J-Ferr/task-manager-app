@@ -1,27 +1,28 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-
+import Layout from "./Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+
 const router = createBrowserRouter([
+  // Login + Register (no navbar)
+  { path: "/login", element: <Login /> },
+  { path: "/register", element: <Register /> },
+
+  // Protected routes with Navbar
   {
     path: "/",
     element: (
       <ProtectedRoute>
-        <Dashboard />
+        <Layout />
       </ProtectedRoute>
     ),
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
+    children: [
+      { index: true, element: <Dashboard /> },
+    ],
   },
 ]);
 
