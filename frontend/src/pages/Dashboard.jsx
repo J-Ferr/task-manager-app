@@ -1,18 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import axiosClient from "../api/axiosClient";
+import { AuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Create new task state
+  // Create new task
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
-  // Edit task state
+  // Edit task
   const [editingTask, setEditingTask] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
+
+  // Filtering + sorting
+  const [filter, setFilter] = useState("all");
+  const [sortOption, setSortOption] = useState("newest");
+
+  // Auth
+  const { logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // Fetch tasks
   const fetchTasks = async () => {
@@ -38,9 +48,83 @@ export default function Dashboard() {
 
   if (loading) return <p className="p-6">Loading tasks...</p>;
 
+  // FILTERING
+  const filteredTasks = tasks.filter((task) => {
+    if (filter === "completed") return task.completed;
+    if (filter === "pending") return !task.completed;
+    return true; // all
+  });
+
+  // SORTING
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortOption === "newest") return b.id - a.id;
+    if (sortOption === "oldest") return a.id - b.id;
+    if (sortOption === "az") return a.title.localeCompare(b.title);
+    if (sortOption === "completed") return b.completed - a.completed;
+    return 0;
+  });
+
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Your Tasks</h1>
+    <div className="p-6 max-w-3xl mx-auto">
+
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Your Tasks</h1>
+
+        {/* Logout */}
+        <button
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
+          className="bg-red-500 text-white px-3 py-1 rounded"
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* FILTER + SORT BAR */}
+      <div className="flex items-center space-x-3 mb-6">
+        {/* Filter Buttons */}
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"
+          }`}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </button>
+
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "completed" ? "bg-blue-600 text-white" : "bg-gray-200"
+          }`}
+          onClick={() => setFilter("completed")}
+        >
+          Completed
+        </button>
+
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "pending" ? "bg-blue-600 text-white" : "bg-gray-200"
+          }`}
+          onClick={() => setFilter("pending")}
+        >
+          Pending
+        </button>
+
+        {/* Sort Dropdown */}
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="border p-2 rounded ml-auto"
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="az">A → Z</option>
+          <option value="completed">Completed First</option>
+        </select>
+      </div>
 
       {/* Create Task Form */}
       <form
@@ -129,12 +213,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tasks List */}
-      {tasks.length === 0 ? (
-        <p>No tasks yet. Create one!</p>
+      {/* Task List */}
+      {sortedTasks.length === 0 ? (
+        <p>No tasks match your filters.</p>
       ) : (
         <ul className="space-y-3">
-          {tasks.map((task) => (
+          {sortedTasks.map((task) => (
             <li
               key={task.id}
               className="border p-3 rounded shadow-sm bg-white flex justify-between items-center"
@@ -144,11 +228,7 @@ export default function Dashboard() {
                 <p className="text-gray-600">{task.description}</p>
                 <p className="text-sm mt-1">
                   Status:{" "}
-                  <span
-                    className={
-                      task.completed ? "text-green-600" : "text-red-600"
-                    }
-                  >
+                  <span className={task.completed ? "text-green-600" : "text-red-600"}>
                     {task.completed ? "Completed" : "Pending"}
                   </span>
                 </p>
@@ -194,4 +274,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
