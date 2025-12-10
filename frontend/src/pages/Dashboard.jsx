@@ -9,6 +9,7 @@ export default function Dashboard() {
 
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newPriority, setNewPriority] = useState("medium");
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -16,34 +17,28 @@ export default function Dashboard() {
 
   const [editingTask, setEditingTask] = useState(null);
 
+  // Fetch tasks
   const fetchTasks = async () => {
-  try {
-    const completed =
-      filter === "all"
-        ? null
-        : filter === "completed"
-        ? true
-        : false;
+    try {
+      const completed =
+        filter === "all"
+          ? null
+          : filter === "completed"
+          ? true
+          : false;
 
-    console.log("Sending filter value:", completed);
+      const res = await axiosClient.get("/tasks", {
+        params: { search, sort, completed },
+      });
 
-    const res = await axiosClient.get("/tasks", {
-      params: {
-        search,
-        sort,
-        completed,
-      },
-    });
-
-    setTasks(res.data);
-  } catch (err) {
-    console.error("Error fetching tasks:", err);
-    toast.error("Unable to load tasks");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setTasks(res.data);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+      toast.error("Unable to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -62,12 +57,15 @@ export default function Dashboard() {
       await axiosClient.post("/tasks", {
         title: newTitle,
         description: newDesc,
+        priority: newPriority,
       });
 
       toast.success("Task created!");
 
       setNewTitle("");
       setNewDesc("");
+      setNewPriority("medium");
+
       fetchTasks();
     } catch (err) {
       console.error(err);
@@ -79,9 +77,7 @@ export default function Dashboard() {
   const handleToggle = async (task) => {
     try {
       await axiosClient.patch(`/tasks/${task.id}/toggle`);
-
       toast.success(task.completed ? "Marked as pending" : "Marked as completed");
-
       fetchTasks();
     } catch (err) {
       console.error(err);
@@ -93,24 +89,17 @@ export default function Dashboard() {
   const handleDelete = async (id) => {
     try {
       await axiosClient.delete(`/tasks/${id}`);
-
       toast.success("Task deleted!");
-
       fetchTasks();
     } catch (err) {
       console.error(err);
       toast.error("Unable to delete task");
     }
   };
+
   // Edit Modal
-  const openEditModal = (task) => {
-  setEditingTask(task);
-};
-
-  const closeEditModal = () => {
-  setEditingTask(null);
-};
-
+  const openEditModal = (task) => setEditingTask(task);
+  const closeEditModal = () => setEditingTask(null);
 
   if (loading) return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
 
@@ -121,6 +110,7 @@ export default function Dashboard() {
 
       {/* Create Task Form */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
+
         <input
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
           placeholder="Task title"
@@ -134,6 +124,17 @@ export default function Dashboard() {
           value={newDesc}
           onChange={(e) => setNewDesc(e.target.value)}
         />
+
+        {/* PRIORITY DROPDOWN */}
+        <select
+          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
+          value={newPriority}
+          onChange={(e) => setNewPriority(e.target.value)}
+        >
+          <option value="low">Low Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
 
         <button
           type="submit"
@@ -210,12 +211,27 @@ export default function Dashboard() {
               key={task.id}
               className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
             >
+
               <div>
                 <h2 className="font-semibold text-lg dark:text-white">
                   {task.title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
 
+                {/* PRIORITY BADGE */}
+                <span
+                  className={`inline-block mt-2 px-2 py-1 text-sm rounded ${
+                    task.priority === "high"
+                      ? "bg-red-600 text-white"
+                      : task.priority === "medium"
+                      ? "bg-yellow-500 text-black"
+                      : "bg-green-600 text-white"
+                  }`}
+                >
+                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                </span>
+
+                {/* STATUS */}
                 <span
                   className={`text-sm block mt-2 ${
                     task.completed ? "text-green-500" : "text-red-500"
@@ -226,43 +242,44 @@ export default function Dashboard() {
               </div>
 
               <div className="flex flex-col gap-2">
-
-              <button
-                onClick={() => openEditModal(task)}
-                className="px-2 py-1 bg-green-600 text-white rounded"
+                <button
+                  onClick={() => openEditModal(task)}
+                  className="px-2 py-1 bg-green-600 text-white rounded"
                 >
-                Edit
-              </button>
+                  Edit
+                </button>
 
-              <button
-                onClick={() => handleToggle(task)}
-                className="px-2 py-1 bg-yellow-500 text-white rounded"
-              >
-                Toggle
-              </button>
+                <button
+                  onClick={() => handleToggle(task)}
+                  className="px-2 py-1 bg-yellow-500 text-white rounded"
+                >
+                  Toggle
+                </button>
 
-              <button
-                onClick={() => handleDelete(task.id)}
-                className="px-2 py-1 bg-red-600 text-white rounded"
+                <button
+                  onClick={() => handleDelete(task.id)}
+                  className="px-2 py-1 bg-red-600 text-white rounded"
                 >
                   Delete
                 </button>
+              </div>
 
-              </div>  
             </li>
           ))}
         </ul>
       )}
-        {/* Edit Modal */}
-        {editingTask && (
-          <TaskEditModal
-            task={editingTask}
-            onClose={closeEditModal}
-            onUpdated={fetchTasks}
-          />
-        )}
+
+      {/* Edit Modal */}
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          onClose={closeEditModal}
+          onUpdated={fetchTasks}
+        />
+      )}
 
     </div>
   );
 }
+
 

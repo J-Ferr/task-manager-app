@@ -5,6 +5,8 @@ import axiosClient from "../api/axiosClient";
 export default function TaskEditModal({ task, onClose, onUpdated }) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
+  const [priority, setPriority] = useState(task.priority);
+  const [completed, setCompleted] = useState(task.completed);  
 
   // Handle submit (update task)
   const handleUpdate = async (e) => {
@@ -14,6 +16,7 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
       const res = await axiosClient.put(`/tasks/${task.id}`, {
         title,
         description,
+        priority,
         completed: task.completed,
       });
 
@@ -32,6 +35,7 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
         <h2 className="text-xl font-bold mb-4 dark:text-white">Edit Task</h2>
 
         <form onSubmit={handleUpdate} className="space-y-4">
+        {/* Title*/}
           <input
             className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded"
             placeholder="Task title"
@@ -39,6 +43,7 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
             onChange={(e) => setTitle(e.target.value)}
           />
 
+          {/* Description */}  
           <textarea
             className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded"
             placeholder="Task description"
@@ -46,6 +51,28 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
             onChange={(e) => setDescription(e.target.value)}
           />
 
+          {/* Priority Dropdown */}
+          <select
+            className="w-full p-3 bg-gray-100 dark:bg-gray-800 dark:text-white rounded"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+          >
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
+
+          {/* Completed Toggle */}
+          <label className="flex items-center space-x-2 dark:text-white">
+            <input
+              type="checkbox"
+              checked={completed}
+              onChange={(e) => setCompleted(e.target.checked)}
+            />
+            <span>Mark as Completed</span>
+          </label>
+
+          {/* Buttons*/}  
           <div className="flex justify-end gap-3">
             <button
               type="button"
