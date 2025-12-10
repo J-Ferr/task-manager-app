@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axiosClient from "../api/axiosClient";
 import toast from "react-hot-toast";
+import TaskEditModal from "../components/TaskEditModal";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -12,6 +13,8 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
+
+  const [editingTask, setEditingTask] = useState(null);
 
   const fetchTasks = async () => {
   try {
@@ -99,6 +102,15 @@ export default function Dashboard() {
       toast.error("Unable to delete task");
     }
   };
+  // Edit Modal
+  const openEditModal = (task) => {
+  setEditingTask(task);
+};
+
+  const closeEditModal = () => {
+  setEditingTask(null);
+};
+
 
   if (loading) return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
 
@@ -214,24 +226,42 @@ export default function Dashboard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => handleToggle(task)}
-                  className="px-2 py-1 bg-yellow-500 text-white rounded"
-                >
-                  Toggle
-                </button>
 
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="px-2 py-1 bg-red-600 text-white rounded"
+              <button
+                onClick={() => openEditModal(task)}
+                className="px-2 py-1 bg-green-600 text-white rounded"
+                >
+                Edit
+              </button>
+
+              <button
+                onClick={() => handleToggle(task)}
+                className="px-2 py-1 bg-yellow-500 text-white rounded"
+              >
+                Toggle
+              </button>
+
+              <button
+                onClick={() => handleDelete(task.id)}
+                className="px-2 py-1 bg-red-600 text-white rounded"
                 >
                   Delete
                 </button>
-              </div>
+
+              </div>  
             </li>
           ))}
         </ul>
       )}
+        {/* Edit Modal */}
+        {editingTask && (
+          <TaskEditModal
+            task={editingTask}
+            onClose={closeEditModal}
+            onUpdated={fetchTasks}
+          />
+        )}
+
     </div>
   );
 }
