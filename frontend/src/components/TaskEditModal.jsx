@@ -6,7 +6,9 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [priority, setPriority] = useState(task.priority);
-  const [completed, setCompleted] = useState(task.completed);  
+  const [completed, setCompleted] = useState(task.completed);
+  const [dueDate, setDueDate] = useState(task.due_date || "");
+  
 
   // Handle submit (update task)
   const handleUpdate = async (e) => {
@@ -18,6 +20,7 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
         description,
         priority,
         completed: task.completed,
+        dueDate,
       });
 
       toast.success("Task updated!");
@@ -50,6 +53,15 @@ export default function TaskEditModal({ task, onClose, onUpdated }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+
+          {/* Due DATE */}
+        <input
+            type="date"
+            className="w-full p-3 bg-gray-100 dark:bg-gray-800 dark:text-white rounded"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+        />
+
 
           {/* Priority Dropdown */}
           <select

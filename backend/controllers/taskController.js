@@ -16,7 +16,8 @@ const getTasks = async (req, res) => {
             search: search || null,
             completed,
             sort: sort || "newest",
-            priority: priority || null
+            priority: priority || null,
+            dueDate: req.query.dueDate || null
         });
 
         res.json(tasks);
@@ -40,7 +41,7 @@ const getTask = async (req, res) => {
 // Create a new task
 const createTask = async (req, res) => {
     try {
-        const { title, description, priority } = req.body;
+        const { title, description, priority, due_date } = req.body;
 
         const validationError = validateTaskInput(title, description);
         if (validationError) {
@@ -51,6 +52,7 @@ const createTask = async (req, res) => {
             title,
             description,
             priority,
+            due_date,
             req.user.id
         );
 
@@ -64,7 +66,7 @@ const createTask = async (req, res) => {
 // Update a task
 const updateTask = async (req, res) => {
     try {
-        const { title, description, completed, priority } = req.body;
+        const { title, description, completed, priority, dueDate } = req.body;
 
         const validationError = validateTaskInput(title, description);
         if (validationError) {
@@ -77,6 +79,7 @@ const updateTask = async (req, res) => {
             description,
             completed,
             priority,
+            dueDate,
             req.user.id
         );
 

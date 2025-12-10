@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
+  const [newDueDate, setNewDueDate] = useState("");
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -59,6 +60,7 @@ export default function Dashboard() {
         title: newTitle,
         description: newDesc,
         priority: newPriority,
+        due_date: newDueDate,
       });
 
       toast.success("Task created!");
@@ -66,6 +68,7 @@ export default function Dashboard() {
       setNewTitle("");
       setNewDesc("");
       setNewPriority("medium");
+      setNewDueDate("");
 
       fetchTasks();
     } catch (err) {
@@ -155,6 +158,13 @@ export default function Dashboard() {
           placeholder="Task description (optional)"
           value={newDesc}
           onChange={(e) => setNewDesc(e.target.value)}
+        />
+
+        <input
+          type="date"
+          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
+          value={newDueDate}
+          onChange={(e) => setNewDueDate(e.target.value)}
         />
 
         {/* PRIORITY DROPDOWN */}
@@ -272,6 +282,18 @@ export default function Dashboard() {
                   {task.completed ? "Completed" : "Pending"}
                 </span>
               </div>
+              {/*Due Date*/}
+              {task.due_date && (
+                <p
+                  className={`mt-2 text-sm ${
+                    new Date(task.due_date) < new Date() && !task.completed
+                     ? "text-red-500 font-semibold"
+                     : "dark:text-gray-300 text-gray-600"
+                 }`}
+                >
+                  Due: {new Date(task.due_date).toLocaleDateString()}
+                </p>
+              )}
 
               <div className="flex flex-col gap-2">
                 <button
