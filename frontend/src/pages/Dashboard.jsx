@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axiosClient from "../api/axiosClient";
 import toast from "react-hot-toast";
 import TaskEditModal from "../components/TaskEditModal";
+import confetti from "canvas-confetti";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -75,15 +76,46 @@ export default function Dashboard() {
 
   // Toggle Task
   const handleToggle = async (task) => {
-    try {
-      await axiosClient.patch(`/tasks/${task.id}/toggle`);
-      toast.success(task.completed ? "Marked as pending" : "Marked as completed");
-      fetchTasks();
-    } catch (err) {
-      console.error(err);
-      toast.error("Unable to update task status");
-    }
+  try {
+    await axiosClient.patch(`/tasks/${task.id}/toggle`);
+
+    const isNowCompleted = !task.completed;
+
+    toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
+
+    // Fire confetti ONLY when marking as completed
+    if (isNowCompleted) {
+  let end = Date.now() + 600;
+
+  const frame = () => {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+    });
+
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+    });
+
+    if (Date.now() < end) requestAnimationFrame(frame);
   };
+
+  frame();
+}
+
+
+    fetchTasks();
+  } catch (err) {
+    console.error(err);
+    toast.error("Unable to update task status");
+  }
+};
+
 
   // Delete Task
   const handleDelete = async (id) => {
