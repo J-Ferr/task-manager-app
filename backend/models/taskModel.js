@@ -86,12 +86,58 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
         index++;
     }
 
-    // Sorting
-    if (sort === "oldest") {
-        query += " ORDER BY created_at ASC";
-    } else {
-        query += " ORDER BY created_at DESC";
-    }
+    // Sorting logic
+switch (sort) {
+  case "oldest":
+    query += ` ORDER BY created_at ASC`;
+    break;
+
+  case "priority-high":
+    // High > Medium > Low
+    query += `
+      ORDER BY 
+        CASE priority
+          WHEN 'high' THEN 1
+          WHEN 'medium' THEN 2
+          WHEN 'low' THEN 3
+        END ASC,
+        created_at DESC
+    `;
+    break;
+
+  case "priority-low":
+    // Low > Medium > High
+    query += `
+      ORDER BY 
+        CASE priority
+          WHEN 'low' THEN 1
+          WHEN 'medium' THEN 2
+          WHEN 'high' THEN 3
+        END ASC,
+        created_at DESC
+    `;
+    break;
+
+  case "due-soon":
+    query += `
+      ORDER BY 
+        (due_date IS NULL) ASC,   -- Nulls last
+        due_date ASC
+    `;
+    break;
+
+  case "due-late":
+    query += `
+      ORDER BY 
+        (due_date IS NULL) ASC,   -- Nulls last
+        due_date DESC
+    `;
+    break;
+
+  default:
+    // newest
+    query += ` ORDER BY created_at DESC`;
+}
 
     const result = await pool.query(query, values);
     return result.rows;

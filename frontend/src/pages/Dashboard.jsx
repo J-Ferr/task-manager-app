@@ -238,7 +238,15 @@ export default function Dashboard() {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
+
+          {/* NEW SORT OPTIONS */}
+          <option value="priority-high">High Priority First</option>
+          <option value="priority-low">Low Priority First</option>
+
+          <option value="due-soon">Due Soon</option>
+          <option value="due-late">Due Later</option>
         </select>
+
       </div>
 
       {/* Task List */}
