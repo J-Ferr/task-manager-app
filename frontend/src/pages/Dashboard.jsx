@@ -60,7 +60,7 @@ export default function Dashboard() {
         title: newTitle,
         description: newDesc,
         priority: newPriority,
-        due_date: newDueDate,
+        due_date: newDueDate|| null,
       });
 
       toast.success("Task created!");

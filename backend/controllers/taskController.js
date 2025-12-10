@@ -43,6 +43,10 @@ const createTask = async (req, res) => {
     try {
         const { title, description, priority, due_date } = req.body;
 
+        if (due_date === "") {
+            due_date = null;
+        }
+
         const validationError = validateTaskInput(title, description);
         if (validationError) {
             return res.status(400).json({ error: validationError });
