@@ -23,11 +23,7 @@ export default function Dashboard() {
   const fetchTasks = async () => {
     try {
       const completed =
-        filter === "all"
-          ? null
-          : filter === "completed"
-          ? true
-          : false;
+        filter === "all" ? null : filter === "completed" ? true : false;
 
       const res = await axiosClient.get("/tasks", {
         params: { search, sort, completed },
@@ -60,7 +56,7 @@ export default function Dashboard() {
         title: newTitle,
         description: newDesc,
         priority: newPriority,
-        due_date: newDueDate|| null,
+        due_date: newDueDate || null,
       });
 
       toast.success("Task created!");
@@ -79,46 +75,43 @@ export default function Dashboard() {
 
   // Toggle Task
   const handleToggle = async (task) => {
-  try {
-    await axiosClient.patch(`/tasks/${task.id}/toggle`);
+    try {
+      await axiosClient.patch(`/tasks/${task.id}/toggle`);
 
-    const isNowCompleted = !task.completed;
+      const isNowCompleted = !task.completed;
 
-    toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
+      toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
 
-    // Fire confetti ONLY when marking as completed
-    if (isNowCompleted) {
-  let end = Date.now() + 600;
+      if (isNowCompleted) {
+        let end = Date.now() + 600;
 
-  const frame = () => {
-    confetti({
-      particleCount: 5,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0 },
-    });
+        const frame = () => {
+          confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+          });
 
-    confetti({
-      particleCount: 5,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1 },
-    });
+          confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+          });
 
-    if (Date.now() < end) requestAnimationFrame(frame);
+          if (Date.now() < end) requestAnimationFrame(frame);
+        };
+
+        frame();
+      }
+
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update task status");
+    }
   };
-
-  frame();
-}
-
-
-    fetchTasks();
-  } catch (err) {
-    console.error(err);
-    toast.error("Unable to update task status");
-  }
-};
-
 
   // Delete Task
   const handleDelete = async (id) => {
@@ -132,20 +125,161 @@ export default function Dashboard() {
     }
   };
 
+  // Due date status helper
+  const getDueStatus = (task) => {
+    if (!task.due_date) return "none";
+
+    const today = new Date();
+    const due = new Date(task.due_date);
+    const diff = (due - today) / (1000 * 60 * 60 * 24);
+
+    if (task.completed) return "completed";
+    if (diff < 0) return "overdue";
+    if (diff <= 1) return "due-soon";
+    if (diff <= 7) return "due-week";
+    return "upcoming";
+  };
+
   // Edit Modal
   const openEditModal = (task) => setEditingTask(task);
   const closeEditModal = () => setEditingTask(null);
 
-  if (loading) return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
+  // RENDER GROUP HELPER
+  const renderGroup = (title, items) => {
+    if (items.length === 0) return null;
+
+    return (
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-3 dark:text-white">{title}</h2>
+        <ul className="space-y-3">
+          {items.map((task) => (
+            <li
+              key={task.id}
+              className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
+            >
+              <div>
+                <h2 className="font-semibold text-lg dark:text-white">
+                  {task.title}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {task.description}
+                </p>
+
+                {/* PRIORITY BADGE */}
+                <span
+                  className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
+                    task.priority === "high"
+                      ? "bg-red-600 text-white"
+                      : task.priority === "medium"
+                      ? "bg-yellow-500 text-black"
+                      : "bg-green-600 text-white"
+                  }`}
+                >
+                  {task.priority.toUpperCase()}
+                </span>
+
+                {/* STATUS */}
+                <span
+                  className={`text-sm block mt-2 ${
+                    task.completed ? "text-green-500" : "text-red-500"
+                  }`}
+                >
+                  {task.completed ? "Completed" : "Pending"}
+                </span>
+
+                {/* DUE DATE */}
+                {task.due_date && (
+                  <p
+                    className={`mt-2 text-sm font-semibold 
+                      ${
+                        getDueStatus(task) === "overdue"
+                          ? "text-red-500"
+                          : getDueStatus(task) === "due-soon"
+                          ? "text-orange-400"
+                          : getDueStatus(task) === "due-week"
+                          ? "text-yellow-500"
+                          : "text-gray-500 dark:text-gray-300"
+                      }
+                    `}
+                  >
+                    Due: {new Date(task.due_date).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => openEditModal(task)}
+                  className="px-2 py-1 bg-green-600 text-white rounded"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleToggle(task)}
+                  className="px-2 py-1 bg-yellow-500 text-white rounded"
+                >
+                  Toggle
+                </button>
+
+                <button
+                  onClick={() => handleDelete(task.id)}
+                  className="px-2 py-1 bg-red-600 text-white rounded"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  // GROUP TASKS INTO SECTIONS
+  const grouped = {
+    high: [],
+    dueToday: [],
+    dueWeek: [],
+    upcoming: [],
+    completed: [],
+  };
+
+  tasks.forEach((task) => {
+    if (task.completed) {
+      grouped.completed.push(task);
+      return;
+    }
+
+    const status = getDueStatus(task);
+
+    if (task.priority === "high") {
+      grouped.high.push(task);
+      return;
+    }
+
+    if (status === "due-soon") {
+      grouped.dueToday.push(task);
+      return;
+    }
+
+    if (status === "due-week") {
+      grouped.dueWeek.push(task);
+      return;
+    }
+
+    grouped.upcoming.push(task);
+  });
+
+  if (loading)
+    return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
 
   return (
     <div className="pb-20">
-
       <h1 className="text-3xl font-bold mb-6 dark:text-white">Your Tasks</h1>
 
       {/* Create Task Form */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
-
         <input
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
           placeholder="Task title"
@@ -167,7 +301,6 @@ export default function Dashboard() {
           onChange={(e) => setNewDueDate(e.target.value)}
         />
 
-        {/* PRIORITY DROPDOWN */}
         <select
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
           value={newPriority}
@@ -186,7 +319,7 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* Filtering */}
+      {/* FILTERS */}
       <div className="flex gap-3 mb-4">
         <button
           className={`px-3 py-1 rounded ${
@@ -222,7 +355,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Search + Sort */}
+      {/* SEARCH + SORT */}
       <div className="flex gap-3 mb-6">
         <input
           placeholder="Search tasks..."
@@ -238,98 +371,19 @@ export default function Dashboard() {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
-
-          {/* NEW SORT OPTIONS */}
           <option value="priority-high">High Priority First</option>
           <option value="priority-low">Low Priority First</option>
-
           <option value="due-soon">Due Soon</option>
           <option value="due-late">Due Later</option>
         </select>
-
       </div>
 
-      {/* Task List */}
-      {tasks.length === 0 ? (
-        <p className="text-gray-600 dark:text-gray-300 text-center">
-          No tasks found.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {tasks.map((task) => (
-            <li
-              key={task.id}
-              className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
-            >
-
-              <div>
-                <h2 className="font-semibold text-lg dark:text-white">
-                  {task.title}
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
-
-                {/* PRIORITY BADGE */}
-                <span
-                  className={`inline-block mt-2 px-2 py-1 text-sm rounded ${
-                    task.priority === "high"
-                      ? "bg-red-600 text-white"
-                      : task.priority === "medium"
-                      ? "bg-yellow-500 text-black"
-                      : "bg-green-600 text-white"
-                  }`}
-                >
-                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                </span>
-
-                {/* STATUS */}
-                <span
-                  className={`text-sm block mt-2 ${
-                    task.completed ? "text-green-500" : "text-red-500"
-                  }`}
-                >
-                  {task.completed ? "Completed" : "Pending"}
-                </span>
-              </div>
-              {/*Due Date*/}
-              {task.due_date && (
-                <p
-                  className={`mt-2 text-sm ${
-                    new Date(task.due_date) < new Date() && !task.completed
-                     ? "text-red-500 font-semibold"
-                     : "dark:text-gray-300 text-gray-600"
-                 }`}
-                >
-                  Due: {new Date(task.due_date).toLocaleDateString()}
-                </p>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => openEditModal(task)}
-                  className="px-2 py-1 bg-green-600 text-white rounded"
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => handleToggle(task)}
-                  className="px-2 py-1 bg-yellow-500 text-white rounded"
-                >
-                  Toggle
-                </button>
-
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="px-2 py-1 bg-red-600 text-white rounded"
-                >
-                  Delete
-                </button>
-              </div>
-
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* GROUPED SECTIONS */}
+      {renderGroup("🔥 High Priority", grouped.high)}
+      {renderGroup("📅 Due Today", grouped.dueToday)}
+      {renderGroup("⏳ Due This Week", grouped.dueWeek)}
+      {renderGroup("📌 Upcoming", grouped.upcoming)}
+      {renderGroup("✔️ Completed", grouped.completed)}
 
       {/* Edit Modal */}
       {editingTask && (
@@ -339,9 +393,6 @@ export default function Dashboard() {
           onUpdated={fetchTasks}
         />
       )}
-
     </div>
   );
 }
-
-
