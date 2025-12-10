@@ -53,7 +53,7 @@ const toggleTaskCompleted = async (id, userId) => {
 };
 
 // Filtered tasks
-const getFilteredTasks = async ({ userId, search, completed, sort, priority, dueDate }) => {
+const getFilteredTasks = async ({ userId, search, completed, sort, priority = null, dueDate = null }) => {
     let query = 'SELECT * FROM tasks WHERE user_id = $1';
     const values = [userId];
     let index = 2;
