@@ -3,6 +3,8 @@ import axiosClient from "../api/axiosClient";
 import toast from "react-hot-toast";
 import TaskEditModal from "../components/TaskEditModal";
 import confetti from "canvas-confetti";
+import SubtaskList from "../components/SubtaskList";
+
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -190,6 +192,10 @@ export default function Dashboard() {
         >
           {task.completed ? "Completed" : "Pending"}
         </span>
+
+        {/* Subtasks */}
+        <SubtaskList taskId={task.id} />
+        
       </div>
 
       <div className="flex flex-col gap-2">
