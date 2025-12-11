@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import axiosClient from "../api/axiosClient";
 import toast from "react-hot-toast";
 import TaskEditModal from "../components/TaskEditModal";
-import confetti from "canvas-confetti";
 import SubtaskList from "../components/SubtaskList";
-
+import confetti from "canvas-confetti";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -20,12 +19,17 @@ export default function Dashboard() {
   const [sort, setSort] = useState("newest");
 
   const [editingTask, setEditingTask] = useState(null);
+  const [hasShownReminders, setHasShownReminders] = useState(false);
 
   // Fetch tasks
   const fetchTasks = async () => {
     try {
       const completed =
-        filter === "all" ? null : filter === "completed" ? true : false;
+        filter === "all"
+          ? null
+          : filter === "completed"
+          ? true
+          : false;
 
       const res = await axiosClient.get("/tasks", {
         params: { search, sort, completed },
@@ -42,6 +46,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search, sort]);
 
   // Create Task
@@ -125,7 +130,7 @@ export default function Dashboard() {
     }
   };
 
-  // Due Status
+  // Due Status Helper
   const getDueStatus = (task) => {
     if (!task.due_date) return "none";
 
@@ -144,105 +149,7 @@ export default function Dashboard() {
   const openEditModal = (task) => setEditingTask(task);
   const closeEditModal = () => setEditingTask(null);
 
-  // Render a single task card
-  const renderTask = (task) => (
-    <li
-      key={task.id}
-      className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
-    >
-      <div>
-        <h2 className="font-semibold text-lg dark:text-white">{task.title}</h2>
-        <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
-
-        {/* Priority Badge */}
-        <span
-          className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
-            task.priority === "high"
-              ? "bg-red-600 text-white"
-              : task.priority === "medium"
-              ? "bg-yellow-500 text-black"
-              : "bg-green-600 text-white"
-          }`}
-        >
-          {task.priority.toUpperCase()}
-        </span>
-
-        {/* Subtask Progress */}
-        {task.total_subtasks > 0 && (
-          <div className="mt-3">
-          <p className="text-sm dark:text-gray-300 mb-1">
-            {task.completed_subtasks}/{task.total_subtasks} subtasks completed
-          </p>
-
-          <div className="w-full bg-gray-300 dark:bg-gray-700 rounded h-2 overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all"
-              style={{
-                width: `${(task.completed_subtasks / task.total_subtasks) * 100}%`,
-              }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-
-        {/* Due Date */}
-        {task.due_date && (
-          <p
-            className={`mt-2 text-sm font-semibold ${
-              getDueStatus(task) === "overdue"
-                ? "text-red-500"
-                : getDueStatus(task) === "due-soon"
-                ? "text-orange-400"
-                : getDueStatus(task) === "due-week"
-                ? "text-yellow-500"
-                : "text-gray-500 dark:text-gray-300"
-            }`}
-          >
-            Due: {new Date(task.due_date).toLocaleDateString()}
-          </p>
-        )}
-
-        {/* Status */}
-        <span
-          className={`text-sm block mt-2 ${
-            task.completed ? "text-green-500" : "text-red-500"
-          }`}
-        >
-          {task.completed ? "Completed" : "Pending"}
-        </span>
-
-        {/* Subtasks */}
-        <SubtaskList taskId={task.id} />
-
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <button
-          onClick={() => openEditModal(task)}
-          className="px-2 py-1 bg-green-600 text-white rounded"
-        >
-          Edit
-        </button>
-
-        <button
-          onClick={() => handleToggle(task)}
-          className="px-2 py-1 bg-yellow-500 text-white rounded"
-        >
-          Toggle
-        </button>
-
-        <button
-          onClick={() => handleDelete(task.id)}
-          className="px-2 py-1 bg-red-600 text-white rounded"
-        >
-          Delete
-        </button>
-      </div>
-    </li>
-  );
-
-  // GROUPS — Option A (only show if tasks exist)
+  // GROUPS
   const highPriority = tasks.filter((t) => t.priority === "high" && !t.completed);
   const overdue = tasks.filter((t) => getDueStatus(t) === "overdue");
   const dueSoon = tasks.filter((t) => getDueStatus(t) === "due-soon");
@@ -257,14 +164,153 @@ export default function Dashboard() {
       getDueStatus(t) !== "due-week"
   );
 
+  // 🔔 Reminder toast (only once per load)
+  useEffect(() => {
+    if (hasShownReminders || tasks.length === 0) return;
+
+    const overdueCount = overdue.length;
+    const dueSoonCount = dueSoon.length;
+
+    if (overdueCount === 0 && dueSoonCount === 0) return;
+
+    const parts = [];
+    if (overdueCount > 0) {
+      parts.push(`${overdueCount} overdue task${overdueCount > 1 ? "s" : ""}`);
+    }
+    if (dueSoonCount > 0) {
+      parts.push(`${dueSoonCount} task${dueSoonCount > 1 ? "s" : ""} due soon`);
+    }
+
+    toast(`⏰ You have ${parts.join(" and ")}`, {
+      icon: "⚠️",
+    });
+
+    setHasShownReminders(true);
+  }, [tasks, overdue.length, dueSoon.length, hasShownReminders]);
+
+  // Render a single task card
+  const renderTask = (task) => {
+    const totalSubtasks = Number(task.total_subtasks || 0);
+    const completedSubtasks = Number(task.completed_subtasks || 0);
+    const hasSubtasks = totalSubtasks > 0;
+
+    return (
+      <li
+        key={task.id}
+        className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
+      >
+        <div className="w-full pr-4">
+          <h2 className="font-semibold text-lg dark:text-white">{task.title}</h2>
+          <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
+
+          {/* Priority Badge */}
+          <span
+            className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
+              task.priority === "high"
+                ? "bg-red-600 text-white"
+                : task.priority === "medium"
+                ? "bg-yellow-500 text-black"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {task.priority.toUpperCase()}
+          </span>
+
+          {/* Due Date Status */}
+          {task.due_date && (
+            <p
+              className={`mt-2 text-sm font-semibold 
+                ${
+                  getDueStatus(task) === "overdue"
+                    ? "text-red-500"
+                    : getDueStatus(task) === "due-soon"
+                    ? "text-orange-400"
+                    : getDueStatus(task) === "due-week"
+                    ? "text-yellow-500"
+                    : "text-gray-500 dark:text-gray-300"
+                }
+              `}
+            >
+              Due: {new Date(task.due_date).toLocaleDateString()}
+            </p>
+          )}
+
+          {/* Status */}
+          <span
+            className={`text-sm block mt-2 ${
+              task.completed ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {task.completed ? "Completed" : "Pending"}
+          </span>
+
+          {/* Subtask Progress */}
+          {hasSubtasks && (
+            <div className="mt-3">
+              <p className="text-sm dark:text-gray-300 mb-1">
+                {completedSubtasks}/{totalSubtasks} subtasks completed
+              </p>
+              <div className="w-full bg-gray-300 dark:bg-gray-700 rounded h-2 overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 transition-all"
+                  style={{
+                    width: `${(completedSubtasks / totalSubtasks) * 100}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {/* Subtasks UI */}
+          <SubtaskList taskId={task.id} />
+        </div>
+
+        <div className="flex flex-col gap-2 items-end">
+          <button
+            onClick={() => openEditModal(task)}
+            className="px-2 py-1 bg-green-600 text-white rounded"
+          >
+            Edit
+          </button>
+
+          <button
+            onClick={() => handleToggle(task)}
+            className="px-2 py-1 bg-yellow-500 text-white rounded"
+          >
+            Toggle
+          </button>
+
+          <button
+            onClick={() => handleDelete(task.id)}
+            className="px-2 py-1 bg-red-600 text-white rounded"
+          >
+            Delete
+          </button>
+        </div>
+      </li>
+    );
+  };
+
   if (loading)
     return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
 
   return (
     <div className="pb-20">
-      <h1 className="text-3xl font-bold mb-6 dark:text-white">Your Tasks</h1>
+      <h1 className="text-3xl font-bold mb-2 dark:text-white">Your Tasks</h1>
 
-      {/* CREATE TASK FORM */}
+      {/* Reminder Banner */}
+      {(overdue.length > 0 || dueSoon.length > 0) && (
+        <div className="mb-4 p-3 rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-sm dark:text-red-100">
+          {overdue.length > 0 && (
+            <p>⚠️ You have {overdue.length} overdue task(s).</p>
+          )}
+          {dueSoon.length > 0 && (
+            <p>⏰ {dueSoon.length} task(s) are due soon.</p>
+          )}
+        </div>
+      )}
+
+      {/* Create Task Form */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
         <input
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
@@ -305,7 +351,43 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* SEARCH / FILTER / SORT */}
+      {/* Status Filter */}
+      <div className="flex gap-3 mb-4">
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "all"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
+          }`}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </button>
+
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "completed"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
+          }`}
+          onClick={() => setFilter("completed")}
+        >
+          Completed
+        </button>
+
+        <button
+          className={`px-3 py-1 rounded ${
+            filter === "pending"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
+          }`}
+          onClick={() => setFilter("pending")}
+        >
+          Pending
+        </button>
+      </div>
+
+      {/* Search + Sort */}
       <div className="flex gap-3 mb-6">
         <input
           placeholder="Search tasks..."
@@ -321,20 +403,20 @@ export default function Dashboard() {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
-
           <option value="priority-high">High Priority First</option>
           <option value="priority-low">Low Priority First</option>
-
           <option value="due-soon">Due Soon</option>
           <option value="due-late">Due Later</option>
         </select>
       </div>
 
-      {/* GROUPED TASK SECTIONS */}
+      {/* Grouped Sections */}
       <div className="space-y-8">
         {highPriority.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-red-500 mb-3">🔥 High Priority</h2>
+            <h2 className="text-xl font-bold text-red-500 mb-3">
+              🔥 High Priority
+            </h2>
             <ul className="space-y-3">{highPriority.map(renderTask)}</ul>
           </section>
         )}
@@ -348,34 +430,42 @@ export default function Dashboard() {
 
         {dueSoon.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-orange-400 mb-3">⏳ Due Soon</h2>
+            <h2 className="text-xl font-bold text-orange-400 mb-3">
+              ⏳ Due Soon
+            </h2>
             <ul className="space-y-3">{dueSoon.map(renderTask)}</ul>
           </section>
         )}
 
         {dueWeek.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-yellow-500 mb-3">📅 Due This Week</h2>
+            <h2 className="text-xl font-bold text-yellow-500 mb-3">
+              📅 Due This Week
+            </h2>
             <ul className="space-y-3">{dueWeek.map(renderTask)}</ul>
           </section>
         )}
 
         {otherTasks.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-gray-400 mb-3">📌 Other Tasks</h2>
+            <h2 className="text-xl font-bold text-gray-400 mb-3">
+              📌 Other Tasks
+            </h2>
             <ul className="space-y-3">{otherTasks.map(renderTask)}</ul>
           </section>
         )}
 
         {completedTasks.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-green-500 mb-3">🟢 Completed</h2>
+            <h2 className="text-xl font-bold text-green-500 mb-3">
+              🟢 Completed
+            </h2>
             <ul className="space-y-3">{completedTasks.map(renderTask)}</ul>
           </section>
         )}
       </div>
 
-      {/* EDIT MODAL */}
+      {/* Edit Modal */}
       {editingTask && (
         <TaskEditModal
           task={editingTask}
@@ -386,4 +476,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
