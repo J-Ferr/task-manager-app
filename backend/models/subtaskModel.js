@@ -35,7 +35,7 @@ const toggleSubtaskCompleted = async (subtaskId, userId) => {
   const result = await pool.query(
     `
     UPDATE subtasks s
-    SET completed = NOT completed
+    SET completed = NOT s.completed
     FROM tasks t
     WHERE s.id = $1
       AND s.task_id = t.id
