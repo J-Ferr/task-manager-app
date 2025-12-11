@@ -44,6 +44,7 @@ const toggleSubtaskCompleted = async (subtaskId, userId) => {
     `,
     [subtaskId, userId]
   );
+
   return result.rows[0] || null;
 };
 

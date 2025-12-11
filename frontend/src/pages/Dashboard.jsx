@@ -167,6 +167,25 @@ export default function Dashboard() {
           {task.priority.toUpperCase()}
         </span>
 
+        {/* Subtask Progress */}
+        {task.total_subtasks > 0 && (
+          <div className="mt-3">
+          <p className="text-sm dark:text-gray-300 mb-1">
+            {task.completed_subtasks}/{task.total_subtasks} subtasks completed
+          </p>
+
+          <div className="w-full bg-gray-300 dark:bg-gray-700 rounded h-2 overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all"
+              style={{
+                width: `${(task.completed_subtasks / task.total_subtasks) * 100}%`,
+              }}
+            ></div>
+          </div>
+        </div>
+      )}
+
+
         {/* Due Date */}
         {task.due_date && (
           <p
@@ -195,7 +214,7 @@ export default function Dashboard() {
 
         {/* Subtasks */}
         <SubtaskList taskId={task.id} />
-        
+
       </div>
 
       <div className="flex flex-col gap-2">

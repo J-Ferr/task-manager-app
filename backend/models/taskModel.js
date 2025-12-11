@@ -53,95 +53,105 @@ const toggleTaskCompleted = async (id, userId) => {
 };
 
 // Filtered tasks
-const getFilteredTasks = async ({ userId, search, completed, sort, priority = null, dueDate = null }) => {
-    let query = 'SELECT * FROM tasks WHERE user_id = $1';
-    const values = [userId];
-    let index = 2;
+const getFilteredTasks = async ({ userId, search, completed, sort, priority, dueDate }) => {
+  let query = `
+    SELECT 
+      t.*,
+      COUNT(s.id) AS total_subtasks,
+      COUNT(CASE WHEN s.completed = TRUE THEN 1 END) AS completed_subtasks
+    FROM tasks t
+    LEFT JOIN subtasks s ON s.task_id = t.id
+    WHERE t.user_id = $1
+  `;
+  
+  const values = [userId];
+  let index = 2;
 
-    // Completed filter
-    if (completed !== null) {
-        query += ` AND completed = $${index}`;
-        values.push(completed);
-        index++;
-    }
+  // Completed filter
+  if (completed !== null) {
+    query += ` AND t.completed = $${index}`;
+    values.push(completed);
+    index++;
+  }
 
-    // Search filter
-    if (search) {
-        query += ` AND (title ILIKE $${index} OR description ILIKE $${index})`;
-        values.push(`%${search}%`);
-        index++;
-    }
+  // Search filter
+  if (search) {
+    query += ` AND (t.title ILIKE $${index} OR t.description ILIKE $${index})`;
+    values.push(`%${search}%`);
+    index++;
+  }
 
-    // Priority filter
-    if (priority) {
-        query += ` AND priority = $${index}`;
-        values.push(priority);
-        index++;
-    }
+  // Priority filter
+  if (priority) {
+    query += ` AND t.priority = $${index}`;
+    values.push(priority);
+    index++;
+  }
 
-    // Due date filter
-    if (dueDate) {
-        query += ` AND due_date = $${index}`;
-        values.push(dueDate);
-        index++;
-    }
+  // Due date filter
+  if (dueDate) {
+    query += ` AND t.due_date = $${index}`;
+    values.push(dueDate);
+    index++;
+  }
 
-    // Sorting logic
-switch (sort) {
-  case "oldest":
-    query += ` ORDER BY created_at ASC`;
-    break;
+  // *** GROUP BY MUST COME BEFORE ORDER BY ***
+  query += ` GROUP BY t.id `;
 
-  case "priority-high":
-    // High > Medium > Low
-    query += `
-      ORDER BY 
-        CASE priority
-          WHEN 'high' THEN 1
-          WHEN 'medium' THEN 2
-          WHEN 'low' THEN 3
-        END ASC,
-        created_at DESC
-    `;
-    break;
+  // Sorting options
+  switch (sort) {
+    case "oldest":
+      query += ` ORDER BY t.created_at ASC`;
+      break;
 
-  case "priority-low":
-    // Low > Medium > High
-    query += `
-      ORDER BY 
-        CASE priority
-          WHEN 'low' THEN 1
-          WHEN 'medium' THEN 2
-          WHEN 'high' THEN 3
-        END ASC,
-        created_at DESC
-    `;
-    break;
+    case "priority-high":
+      query += `
+        ORDER BY 
+          CASE t.priority
+            WHEN 'high' THEN 1
+            WHEN 'medium' THEN 2
+            WHEN 'low' THEN 3
+          END ASC,
+          t.created_at DESC
+      `;
+      break;
 
-  case "due-soon":
-    query += `
-      ORDER BY 
-        (due_date IS NULL) ASC,   -- Nulls last
-        due_date ASC
-    `;
-    break;
+    case "priority-low":
+      query += `
+        ORDER BY 
+          CASE t.priority
+            WHEN 'low' THEN 1
+            WHEN 'medium' THEN 2
+            WHEN 'high' THEN 3
+          END ASC,
+          t.created_at DESC
+      `;
+      break;
 
-  case "due-late":
-    query += `
-      ORDER BY 
-        (due_date IS NULL) ASC,   -- Nulls last
-        due_date DESC
-    `;
-    break;
+    case "due-soon":
+      query += `
+        ORDER BY 
+          (t.due_date IS NULL) ASC,
+          t.due_date ASC
+      `;
+      break;
 
-  default:
-    // newest
-    query += ` ORDER BY created_at DESC`;
-}
+    case "due-late":
+      query += `
+        ORDER BY 
+          (t.due_date IS NULL) ASC,
+          t.due_date DESC
+      `;
+      break;
 
-    const result = await pool.query(query, values);
-    return result.rows;
+    default:
+      query += ` ORDER BY t.created_at DESC`;
+  }
+
+  const result = await pool.query(query, values);
+  return result.rows;
 };
+
 
 
 module.exports = {
