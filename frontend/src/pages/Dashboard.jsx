@@ -73,13 +73,12 @@ export default function Dashboard() {
     }
   };
 
-  // Toggle Task
+  // Toggle Task Completion
   const handleToggle = async (task) => {
     try {
       await axiosClient.patch(`/tasks/${task.id}/toggle`);
 
       const isNowCompleted = !task.completed;
-
       toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
 
       if (isNowCompleted) {
@@ -92,7 +91,6 @@ export default function Dashboard() {
             spread: 55,
             origin: { x: 0 },
           });
-
           confetti({
             particleCount: 5,
             angle: 120,
@@ -125,7 +123,7 @@ export default function Dashboard() {
     }
   };
 
-  // Due date status helper
+  // Due Status
   const getDueStatus = (task) => {
     if (!task.due_date) return "none";
 
@@ -144,132 +142,95 @@ export default function Dashboard() {
   const openEditModal = (task) => setEditingTask(task);
   const closeEditModal = () => setEditingTask(null);
 
-  // RENDER GROUP HELPER
-  const renderGroup = (title, items) => {
-    if (items.length === 0) return null;
+  // Render a single task card
+  const renderTask = (task) => (
+    <li
+      key={task.id}
+      className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
+    >
+      <div>
+        <h2 className="font-semibold text-lg dark:text-white">{task.title}</h2>
+        <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
 
-    return (
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-3 dark:text-white">{title}</h2>
-        <ul className="space-y-3">
-          {items.map((task) => (
-            <li
-              key={task.id}
-              className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
-            >
-              <div>
-                <h2 className="font-semibold text-lg dark:text-white">
-                  {task.title}
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {task.description}
-                </p>
+        {/* Priority Badge */}
+        <span
+          className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
+            task.priority === "high"
+              ? "bg-red-600 text-white"
+              : task.priority === "medium"
+              ? "bg-yellow-500 text-black"
+              : "bg-green-600 text-white"
+          }`}
+        >
+          {task.priority.toUpperCase()}
+        </span>
 
-                {/* PRIORITY BADGE */}
-                <span
-                  className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
-                    task.priority === "high"
-                      ? "bg-red-600 text-white"
-                      : task.priority === "medium"
-                      ? "bg-yellow-500 text-black"
-                      : "bg-green-600 text-white"
-                  }`}
-                >
-                  {task.priority.toUpperCase()}
-                </span>
+        {/* Due Date */}
+        {task.due_date && (
+          <p
+            className={`mt-2 text-sm font-semibold ${
+              getDueStatus(task) === "overdue"
+                ? "text-red-500"
+                : getDueStatus(task) === "due-soon"
+                ? "text-orange-400"
+                : getDueStatus(task) === "due-week"
+                ? "text-yellow-500"
+                : "text-gray-500 dark:text-gray-300"
+            }`}
+          >
+            Due: {new Date(task.due_date).toLocaleDateString()}
+          </p>
+        )}
 
-                {/* STATUS */}
-                <span
-                  className={`text-sm block mt-2 ${
-                    task.completed ? "text-green-500" : "text-red-500"
-                  }`}
-                >
-                  {task.completed ? "Completed" : "Pending"}
-                </span>
-
-                {/* DUE DATE */}
-                {task.due_date && (
-                  <p
-                    className={`mt-2 text-sm font-semibold 
-                      ${
-                        getDueStatus(task) === "overdue"
-                          ? "text-red-500"
-                          : getDueStatus(task) === "due-soon"
-                          ? "text-orange-400"
-                          : getDueStatus(task) === "due-week"
-                          ? "text-yellow-500"
-                          : "text-gray-500 dark:text-gray-300"
-                      }
-                    `}
-                  >
-                    Due: {new Date(task.due_date).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => openEditModal(task)}
-                  className="px-2 py-1 bg-green-600 text-white rounded"
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => handleToggle(task)}
-                  className="px-2 py-1 bg-yellow-500 text-white rounded"
-                >
-                  Toggle
-                </button>
-
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="px-2 py-1 bg-red-600 text-white rounded"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* Status */}
+        <span
+          className={`text-sm block mt-2 ${
+            task.completed ? "text-green-500" : "text-red-500"
+          }`}
+        >
+          {task.completed ? "Completed" : "Pending"}
+        </span>
       </div>
-    );
-  };
 
-  // GROUP TASKS INTO SECTIONS
-  const grouped = {
-    high: [],
-    dueToday: [],
-    dueWeek: [],
-    upcoming: [],
-    completed: [],
-  };
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={() => openEditModal(task)}
+          className="px-2 py-1 bg-green-600 text-white rounded"
+        >
+          Edit
+        </button>
 
-  tasks.forEach((task) => {
-    if (task.completed) {
-      grouped.completed.push(task);
-      return;
-    }
+        <button
+          onClick={() => handleToggle(task)}
+          className="px-2 py-1 bg-yellow-500 text-white rounded"
+        >
+          Toggle
+        </button>
 
-    const status = getDueStatus(task);
+        <button
+          onClick={() => handleDelete(task.id)}
+          className="px-2 py-1 bg-red-600 text-white rounded"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+  );
 
-    if (task.priority === "high") {
-      grouped.high.push(task);
-      return;
-    }
-
-    if (status === "due-soon") {
-      grouped.dueToday.push(task);
-      return;
-    }
-
-    if (status === "due-week") {
-      grouped.dueWeek.push(task);
-      return;
-    }
-
-    grouped.upcoming.push(task);
-  });
+  // GROUPS — Option A (only show if tasks exist)
+  const highPriority = tasks.filter((t) => t.priority === "high" && !t.completed);
+  const overdue = tasks.filter((t) => getDueStatus(t) === "overdue");
+  const dueSoon = tasks.filter((t) => getDueStatus(t) === "due-soon");
+  const dueWeek = tasks.filter((t) => getDueStatus(t) === "due-week");
+  const completedTasks = tasks.filter((t) => t.completed);
+  const otherTasks = tasks.filter(
+    (t) =>
+      !t.completed &&
+      t.priority !== "high" &&
+      getDueStatus(t) !== "overdue" &&
+      getDueStatus(t) !== "due-soon" &&
+      getDueStatus(t) !== "due-week"
+  );
 
   if (loading)
     return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
@@ -278,7 +239,7 @@ export default function Dashboard() {
     <div className="pb-20">
       <h1 className="text-3xl font-bold mb-6 dark:text-white">Your Tasks</h1>
 
-      {/* Create Task Form */}
+      {/* CREATE TASK FORM */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
         <input
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
@@ -319,43 +280,7 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* FILTERS */}
-      <div className="flex gap-3 mb-4">
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "all"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("all")}
-        >
-          All
-        </button>
-
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "completed"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("completed")}
-        >
-          Completed
-        </button>
-
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "pending"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("pending")}
-        >
-          Pending
-        </button>
-      </div>
-
-      {/* SEARCH + SORT */}
+      {/* SEARCH / FILTER / SORT */}
       <div className="flex gap-3 mb-6">
         <input
           placeholder="Search tasks..."
@@ -371,21 +296,61 @@ export default function Dashboard() {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
+
           <option value="priority-high">High Priority First</option>
           <option value="priority-low">Low Priority First</option>
+
           <option value="due-soon">Due Soon</option>
           <option value="due-late">Due Later</option>
         </select>
       </div>
 
-      {/* GROUPED SECTIONS */}
-      {renderGroup("🔥 High Priority", grouped.high)}
-      {renderGroup("📅 Due Today", grouped.dueToday)}
-      {renderGroup("⏳ Due This Week", grouped.dueWeek)}
-      {renderGroup("📌 Upcoming", grouped.upcoming)}
-      {renderGroup("✔️ Completed", grouped.completed)}
+      {/* GROUPED TASK SECTIONS */}
+      <div className="space-y-8">
+        {highPriority.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-red-500 mb-3">🔥 High Priority</h2>
+            <ul className="space-y-3">{highPriority.map(renderTask)}</ul>
+          </section>
+        )}
 
-      {/* Edit Modal */}
+        {overdue.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-red-400 mb-3">⚠️ Overdue</h2>
+            <ul className="space-y-3">{overdue.map(renderTask)}</ul>
+          </section>
+        )}
+
+        {dueSoon.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-orange-400 mb-3">⏳ Due Soon</h2>
+            <ul className="space-y-3">{dueSoon.map(renderTask)}</ul>
+          </section>
+        )}
+
+        {dueWeek.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-yellow-500 mb-3">📅 Due This Week</h2>
+            <ul className="space-y-3">{dueWeek.map(renderTask)}</ul>
+          </section>
+        )}
+
+        {otherTasks.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-gray-400 mb-3">📌 Other Tasks</h2>
+            <ul className="space-y-3">{otherTasks.map(renderTask)}</ul>
+          </section>
+        )}
+
+        {completedTasks.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-green-500 mb-3">🟢 Completed</h2>
+            <ul className="space-y-3">{completedTasks.map(renderTask)}</ul>
+          </section>
+        )}
+      </div>
+
+      {/* EDIT MODAL */}
       {editingTask && (
         <TaskEditModal
           task={editingTask}
@@ -396,3 +361,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
