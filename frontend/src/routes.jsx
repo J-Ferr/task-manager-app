@@ -6,6 +6,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import CalendarPage from "./pages/CalendarPage";
+
 
 const router = createBrowserRouter([
   // Login + Register (no navbar)
@@ -23,6 +25,11 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
     ],
+  },
+
+  {
+    path: "/calendar",
+    element: <CalendarPage />
   },
 ]);
 

@@ -22,6 +22,14 @@ export default function Navbar() {
       <div className="flex items-center space-x-4">
 
         <button
+          onClick={() => navigate("/calendar")}
+          className="px-3 py-1 bg-purple-600 text-white rounded"
+        >
+          Calendar
+        </button>
+
+
+        <button
           onClick={toggleTheme}
           className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white"
         >
