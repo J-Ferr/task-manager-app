@@ -19,17 +19,32 @@ export default function Dashboard() {
   const [sort, setSort] = useState("newest");
 
   const [editingTask, setEditingTask] = useState(null);
+
   const [hasShownReminders, setHasShownReminders] = useState(false);
 
-  // Fetch tasks
+  // Keeps track of which tasks have already triggered notifications
+  const [notifiedTasks, setNotifiedTasks] = useState({});
+
+  // ============================================
+  //  NOTIFICATION HANDLER
+  // ============================================
+  const sendNotification = (task, message) => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    new Notification(task.title, {
+      body: message,
+      icon: "/icon.png",
+    });
+  };
+
+  // ============================================
+  //  FETCH TASKS
+  // ============================================
   const fetchTasks = async () => {
     try {
       const completed =
-        filter === "all"
-          ? null
-          : filter === "completed"
-          ? true
-          : false;
+        filter === "all" ? null : filter === "completed" ? true : false;
 
       const res = await axiosClient.get("/tasks", {
         params: { search, sort, completed },
@@ -44,12 +59,66 @@ export default function Dashboard() {
     }
   };
 
+  // ============================================
+  //  REQUEST NOTIFICATION PERMISSION ON MOUNT
+  // ============================================
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // ============================================
+  //  FETCH TASKS WHEN FILTER/SORT/SEARCH CHANGE
+  // ============================================
   useEffect(() => {
     fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search, sort]);
 
-  // Create Task
+  // ============================================
+  //  AUTO-REFRESH EVERY 60 SECONDS
+  // ============================================
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTasks();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ============================================
+  //  REMINDER NOTIFICATIONS
+  // ============================================
+  useEffect(() => {
+    if (!tasks.length) return;
+
+    const now = new Date();
+
+    tasks.forEach((task) => {
+      if (!task.due_date || task.completed) return;
+
+      const due = new Date(task.due_date);
+      const diffHours = (due - now) / (1000 * 60 * 60);
+
+      // Avoid duplicate notifications
+      if (notifiedTasks[String(task.id)]) return;
+
+      if (diffHours <= 0) {
+        sendNotification(task, "This task is overdue!");
+        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
+      } else if (diffHours <= 1) {
+        sendNotification(task, "This task is due within the next hour!");
+        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
+      } else if (diffHours <= 24) {
+        sendNotification(task, "This task is due within 24 hours.");
+        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
+      }
+    });
+  }, [tasks]);
+
+  // ============================================
+  //  CREATE TASK
+  // ============================================
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
@@ -80,30 +149,23 @@ export default function Dashboard() {
     }
   };
 
-  // Toggle Task Completion
+  // ============================================
+  //  TOGGLE COMPLETED
+  // ============================================
   const handleToggle = async (task) => {
     try {
       await axiosClient.patch(`/tasks/${task.id}/toggle`);
 
       const isNowCompleted = !task.completed;
+
       toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
 
       if (isNowCompleted) {
         let end = Date.now() + 600;
 
         const frame = () => {
-          confetti({
-            particleCount: 5,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-          });
-          confetti({
-            particleCount: 5,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-          });
+          confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+          confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
 
           if (Date.now() < end) requestAnimationFrame(frame);
         };
@@ -118,7 +180,9 @@ export default function Dashboard() {
     }
   };
 
-  // Delete Task
+  // ============================================
+  //  DELETE TASK
+  // ============================================
   const handleDelete = async (id) => {
     try {
       await axiosClient.delete(`/tasks/${id}`);
@@ -130,7 +194,9 @@ export default function Dashboard() {
     }
   };
 
-  // Due Status Helper
+  // ============================================
+  //  DUE DATE STATUS
+  // ============================================
   const getDueStatus = (task) => {
     if (!task.due_date) return "none";
 
@@ -145,11 +211,15 @@ export default function Dashboard() {
     return "upcoming";
   };
 
-  // Edit Modal
+  // ============================================
+  //  EDIT MODAL
+  // ============================================
   const openEditModal = (task) => setEditingTask(task);
   const closeEditModal = () => setEditingTask(null);
 
-  // GROUPS
+  // ============================================
+  //  GROUPING LOGIC
+  // ============================================
   const highPriority = tasks.filter((t) => t.priority === "high" && !t.completed);
   const overdue = tasks.filter((t) => getDueStatus(t) === "overdue");
   const dueSoon = tasks.filter((t) => getDueStatus(t) === "due-soon");
@@ -164,7 +234,9 @@ export default function Dashboard() {
       getDueStatus(t) !== "due-week"
   );
 
-  // 🔔 Reminder toast (only once per load)
+  // ============================================
+  //  REMINDER BANNER (toast only once)
+  // ============================================
   useEffect(() => {
     if (hasShownReminders || tasks.length === 0) return;
 
@@ -174,21 +246,19 @@ export default function Dashboard() {
     if (overdueCount === 0 && dueSoonCount === 0) return;
 
     const parts = [];
-    if (overdueCount > 0) {
+    if (overdueCount > 0)
       parts.push(`${overdueCount} overdue task${overdueCount > 1 ? "s" : ""}`);
-    }
-    if (dueSoonCount > 0) {
+    if (dueSoonCount > 0)
       parts.push(`${dueSoonCount} task${dueSoonCount > 1 ? "s" : ""} due soon`);
-    }
 
-    toast(`⏰ You have ${parts.join(" and ")}`, {
-      icon: "⚠️",
-    });
+    toast(`⏰ You have ${parts.join(" and ")}`, { icon: "⚠️" });
 
     setHasShownReminders(true);
   }, [tasks, overdue.length, dueSoon.length, hasShownReminders]);
 
-  // Render a single task card
+  // ============================================
+  //  TASK ITEM RENDERER
+  // ============================================
   const renderTask = (task) => {
     const totalSubtasks = Number(task.total_subtasks || 0);
     const completedSubtasks = Number(task.completed_subtasks || 0);
@@ -216,26 +286,24 @@ export default function Dashboard() {
             {task.priority.toUpperCase()}
           </span>
 
-          {/* Due Date Status */}
+          {/* Due Date */}
           {task.due_date && (
             <p
-              className={`mt-2 text-sm font-semibold 
-                ${
-                  getDueStatus(task) === "overdue"
-                    ? "text-red-500"
-                    : getDueStatus(task) === "due-soon"
-                    ? "text-orange-400"
-                    : getDueStatus(task) === "due-week"
-                    ? "text-yellow-500"
-                    : "text-gray-500 dark:text-gray-300"
-                }
-              `}
+              className={`mt-2 text-sm font-semibold ${
+                getDueStatus(task) === "overdue"
+                  ? "text-red-500"
+                  : getDueStatus(task) === "due-soon"
+                  ? "text-orange-400"
+                  : getDueStatus(task) === "due-week"
+                  ? "text-yellow-500"
+                  : "text-gray-500 dark:text-gray-300"
+              }`}
             >
               Due: {new Date(task.due_date).toLocaleDateString()}
             </p>
           )}
 
-          {/* Status */}
+          {/* Completed/Pending */}
           <span
             className={`text-sm block mt-2 ${
               task.completed ? "text-green-500" : "text-red-500"
@@ -254,14 +322,16 @@ export default function Dashboard() {
                 <div
                   className="h-full bg-blue-600 transition-all"
                   style={{
-                    width: `${(completedSubtasks / totalSubtasks) * 100}%`,
+                    width: `${
+                      (completedSubtasks / totalSubtasks) * 100
+                    }%`,
                   }}
                 ></div>
               </div>
             </div>
           )}
 
-          {/* Subtasks UI */}
+          {/* Subtasks Component */}
           <SubtaskList taskId={task.id} />
         </div>
 
@@ -291,9 +361,15 @@ export default function Dashboard() {
     );
   };
 
+  // ============================================
+  //  LOADING STATE
+  // ============================================
   if (loading)
     return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
 
+  // ============================================
+  //  MAIN RETURN
+  // ============================================
   return (
     <div className="pb-20">
       <h1 className="text-3xl font-bold mb-2 dark:text-white">Your Tasks</h1>
@@ -310,7 +386,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Create Task Form */}
+      {/* Create Task */}
       <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
         <input
           className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
@@ -351,7 +427,7 @@ export default function Dashboard() {
         </button>
       </form>
 
-      {/* Status Filter */}
+      {/* Filter Buttons */}
       <div className="flex gap-3 mb-4">
         <button
           className={`px-3 py-1 rounded ${
@@ -414,9 +490,7 @@ export default function Dashboard() {
       <div className="space-y-8">
         {highPriority.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-red-500 mb-3">
-              🔥 High Priority
-            </h2>
+            <h2 className="text-xl font-bold text-red-500 mb-3">🔥 High Priority</h2>
             <ul className="space-y-3">{highPriority.map(renderTask)}</ul>
           </section>
         )}
@@ -430,42 +504,33 @@ export default function Dashboard() {
 
         {dueSoon.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-orange-400 mb-3">
-              ⏳ Due Soon
-            </h2>
+            <h2 className="text-xl font-bold text-orange-400 mb-3">⏳ Due Soon</h2>
             <ul className="space-y-3">{dueSoon.map(renderTask)}</ul>
           </section>
         )}
 
         {dueWeek.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-yellow-500 mb-3">
-              📅 Due This Week
-            </h2>
+            <h2 className="text-xl font-bold text-yellow-500 mb-3">📅 Due This Week</h2>
             <ul className="space-y-3">{dueWeek.map(renderTask)}</ul>
           </section>
         )}
 
         {otherTasks.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-gray-400 mb-3">
-              📌 Other Tasks
-            </h2>
+            <h2 className="text-xl font-bold text-gray-400 mb-3">📌 Other Tasks</h2>
             <ul className="space-y-3">{otherTasks.map(renderTask)}</ul>
           </section>
         )}
 
         {completedTasks.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-green-500 mb-3">
-              🟢 Completed
-            </h2>
+            <h2 className="text-xl font-bold text-green-500 mb-3">🟢 Completed</h2>
             <ul className="space-y-3">{completedTasks.map(renderTask)}</ul>
           </section>
         )}
       </div>
 
-      {/* Edit Modal */}
       {editingTask && (
         <TaskEditModal
           task={editingTask}
@@ -476,5 +541,6 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 
