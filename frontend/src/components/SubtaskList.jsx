@@ -82,6 +82,7 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
                 <input
                   type="checkbox"
                   checked={sub.completed}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={() => handleToggle(sub)}
                   className="h-4 w-4"
                 />
@@ -97,11 +98,15 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
               </div>
 
               <button
-                onClick={() => handleDelete(sub.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(sub.id);
+                }}
                 className="text-xs text-red-500 hover:underline"
               >
                 Delete
               </button>
+
             </li>
           ))}
         </ul>

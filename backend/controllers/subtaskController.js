@@ -7,7 +7,8 @@ const createSubtask = async (req, res) => {
 
     const subtask = await subtaskModel.createSubtask(
       req.params.taskId,
-      title
+      title,
+      req.user.id
     );
 
     res.status(201).json(subtask);

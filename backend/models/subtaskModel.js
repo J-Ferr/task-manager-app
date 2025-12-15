@@ -56,7 +56,7 @@ const updateSubtask = async (id, completed, title) => {
 
   values.push(id);
 
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
@@ -98,6 +98,7 @@ const deleteSubtask = async (subtaskId, userId) => {
 module.exports = {
   getSubtasksForTask,
   createSubtask,
+  updateSubtask,
   toggleSubtaskCompleted,
   deleteSubtask,
 };
