@@ -55,15 +55,23 @@ const toggleTaskCompleted = async (id, userId) => {
 // Filtered tasks
 const getFilteredTasks = async ({ userId, search, completed, sort, priority, dueDate }) => {
   let query = `
-    SELECT 
+    SELECT
       t.*,
-      COUNT(s.id) AS total_subtasks,
-      COUNT(CASE WHEN s.completed = TRUE THEN 1 END) AS completed_subtasks
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', s.id,
+            'title', s.title,
+            'completed', s.completed
+          )
+        ) FILTER (WHERE s.id IS NOT NULL),
+        '[]'
+      ) AS subtasks
     FROM tasks t
     LEFT JOIN subtasks s ON s.task_id = t.id
     WHERE t.user_id = $1
   `;
-  
+
   const values = [userId];
   let index = 2;
 
@@ -95,7 +103,7 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
     index++;
   }
 
-  // *** GROUP BY MUST COME BEFORE ORDER BY ***
+  // Group by task (required for json_agg)
   query += ` GROUP BY t.id `;
 
   // Sorting options
@@ -106,7 +114,7 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
 
     case "priority-high":
       query += `
-        ORDER BY 
+        ORDER BY
           CASE t.priority
             WHEN 'high' THEN 1
             WHEN 'medium' THEN 2
@@ -118,7 +126,7 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
 
     case "priority-low":
       query += `
-        ORDER BY 
+        ORDER BY
           CASE t.priority
             WHEN 'low' THEN 1
             WHEN 'medium' THEN 2
@@ -130,7 +138,7 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
 
     case "due-soon":
       query += `
-        ORDER BY 
+        ORDER BY
           (t.due_date IS NULL) ASC,
           t.due_date ASC
       `;
@@ -138,7 +146,7 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
 
     case "due-late":
       query += `
-        ORDER BY 
+        ORDER BY
           (t.due_date IS NULL) ASC,
           t.due_date DESC
       `;
@@ -148,10 +156,9 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
       query += ` ORDER BY t.created_at DESC`;
   }
 
-  const result = await pool.query(query, values);
-  return result.rows;
+  const { rows } = await require("../db").query(query, values);
+  return rows;
 };
-
 
 
 module.exports = {

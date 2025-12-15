@@ -30,6 +30,37 @@ const createSubtask = async (taskId, title, userId) => {
   return result.rows[0] || null;
 };
 
+const updateSubtask = async (id, completed, title) => {
+  const fields = [];
+  const values = [];
+  let index = 1;
+
+  if (completed !== undefined) {
+    fields.push(`completed = $${index++}`);
+    values.push(completed);
+  }
+
+  if (title !== undefined) {
+    fields.push(`title = $${index++}`);
+    values.push(title);
+  }
+
+  if (!fields.length) return null;
+
+  const query = `
+    UPDATE subtasks
+    SET ${fields.join(", ")}
+    WHERE id = $${index}
+    RETURNING *
+  `;
+
+  values.push(id);
+
+  const { rows } = await db.query(query, values);
+  return rows[0];
+};
+
+
 // Toggle subtask completed
 const toggleSubtaskCompleted = async (subtaskId, userId) => {
   const result = await pool.query(

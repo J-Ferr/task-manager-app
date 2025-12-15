@@ -22,6 +22,8 @@ app.get('/', (req, res) => {
     res.send('Rask Manager API is running');
 });
 
+const subtaskRoutes = require("./routes/subtaskRoutes");
+app.use("/subtasks", subtaskRoutes);
 
 
 

@@ -1,35 +1,25 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const taskController = require('../controllers/taskController');
-const requireAuth = require('../middleware/authMiddleware');
-const subtaskController = require("../controllers/subtaskController");
 
+const auth = require("../middleware/authMiddleware");
 
-// Protect all routes below this line
-router.use(requireAuth);
+const {
+  getTasks,
+  getTask,
+  createTask,
+  updateTask,
+  deleteTask,
+  toggleTaskCompleted
+} = require("../controllers/taskController");
 
+// All task routes require auth
+router.use(auth);
 
-// Routes
-router.get('/', taskController.getTasks);
-router.get('/:id', taskController.getTask);
-router.post('/', taskController.createTask);
-router.put('/:id', taskController.updateTask);
-router.delete('/:id', taskController.deleteTask);
-router.patch('/:id/toggle', taskController.toggleTaskCompleted);
-
-// Subtasks routes
-
-// Get all subtasks for a task
-router.get("/:taskId/subtasks", subtaskController.getSubtasksForTask);
-
-// Create a new subtask for a task
-router.post("/:taskId/subtasks", subtaskController.createSubtask);
-
-// Toggle a subtask
-router.patch("/subtasks/:id/toggle", subtaskController.toggleSubtaskCompleted);
-
-// Delete a subtask
-router.delete("/subtasks/:id", subtaskController.deleteSubtask);
-
+router.get("/", getTasks);
+router.get("/:id", getTask);
+router.post("/", createTask);
+router.put("/:id", updateTask);
+router.patch("/:id/toggle", toggleTaskCompleted);
+router.delete("/:id", deleteTask);
 
 module.exports = router;

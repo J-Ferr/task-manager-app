@@ -14,111 +14,40 @@ export default function Dashboard() {
   const [newPriority, setNewPriority] = useState("medium");
   const [newDueDate, setNewDueDate] = useState("");
 
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all"); // all | pending | completed
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
 
   const [editingTask, setEditingTask] = useState(null);
 
-  const [hasShownReminders, setHasShownReminders] = useState(false);
-
-  // Keeps track of which tasks have already triggered notifications
-  const [notifiedTasks, setNotifiedTasks] = useState({});
-
-  // ============================================
-  //  NOTIFICATION HANDLER
-  // ============================================
-  const sendNotification = (task, message) => {
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-
-    new Notification(task.title, {
-      body: message,
-      icon: "/icon.png",
-    });
-  };
-
-  // ============================================
-  //  FETCH TASKS
-  // ============================================
+  // ============================
+  // FETCH TASKS
+  // ============================
   const fetchTasks = async () => {
     try {
       const completed =
-        filter === "all" ? null : filter === "completed" ? true : false;
+        filter === "all" ? null : filter === "completed";
 
-      const res = await axiosClient.get("/tasks", {
+      const { data } = await axiosClient.get("/tasks", {
         params: { search, sort, completed },
       });
 
-      setTasks(res.data);
+      setTasks(data);
     } catch (err) {
-      console.error("Error fetching tasks:", err);
+      console.error(err);
       toast.error("Unable to load tasks");
     } finally {
       setLoading(false);
     }
   };
 
-  // ============================================
-  //  REQUEST NOTIFICATION PERMISSION ON MOUNT
-  // ============================================
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // ============================================
-  //  FETCH TASKS WHEN FILTER/SORT/SEARCH CHANGE
-  // ============================================
   useEffect(() => {
     fetchTasks();
   }, [filter, search, sort]);
 
-  // ============================================
-  //  AUTO-REFRESH EVERY 60 SECONDS
-  // ============================================
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTasks();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // ============================================
-  //  REMINDER NOTIFICATIONS
-  // ============================================
-  useEffect(() => {
-    if (!tasks.length) return;
-
-    const now = new Date();
-
-    tasks.forEach((task) => {
-      if (!task.due_date || task.completed) return;
-
-      const due = new Date(task.due_date);
-      const diffHours = (due - now) / (1000 * 60 * 60);
-
-      // Avoid duplicate notifications
-      if (notifiedTasks[String(task.id)]) return;
-
-      if (diffHours <= 0) {
-        sendNotification(task, "This task is overdue!");
-        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
-      } else if (diffHours <= 1) {
-        sendNotification(task, "This task is due within the next hour!");
-        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
-      } else if (diffHours <= 24) {
-        sendNotification(task, "This task is due within 24 hours.");
-        setNotifiedTasks((prev) => ({ ...prev, [String(task.id)]: true }));
-      }
-    });
-  }, [tasks]);
-
-  // ============================================
-  //  CREATE TASK
-  // ============================================
+  // ============================
+  // CREATE TASK
+  // ============================
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
@@ -135,7 +64,7 @@ export default function Dashboard() {
         due_date: newDueDate || null,
       });
 
-      toast.success("Task created!");
+      toast.success("Task created ✨");
 
       setNewTitle("");
       setNewDesc("");
@@ -143,404 +72,248 @@ export default function Dashboard() {
       setNewDueDate("");
 
       fetchTasks();
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Error creating task");
     }
   };
 
-  // ============================================
-  //  TOGGLE COMPLETED
-  // ============================================
+  // ============================
+  // TOGGLE TASK
+  // ============================
   const handleToggle = async (task) => {
     try {
       await axiosClient.patch(`/tasks/${task.id}/toggle`);
 
-      const isNowCompleted = !task.completed;
-
-      toast.success(isNowCompleted ? "Task completed!" : "Marked as pending");
-
-      if (isNowCompleted) {
-        let end = Date.now() + 600;
-
-        const frame = () => {
-          confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
-          confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
-
-          if (Date.now() < end) requestAnimationFrame(frame);
-        };
-
-        frame();
+      if (!task.completed) {
+        confetti({ particleCount: 90, spread: 70 });
       }
 
       fetchTasks();
-    } catch (err) {
-      console.error(err);
-      toast.error("Unable to update task status");
+    } catch {
+      toast.error("Unable to update task");
     }
   };
 
-  // ============================================
-  //  DELETE TASK
-  // ============================================
+  // ============================
+  // DELETE TASK
+  // ============================
   const handleDelete = async (id) => {
     try {
       await axiosClient.delete(`/tasks/${id}`);
-      toast.success("Task deleted!");
+      toast.success("Task deleted 🗑️");
       fetchTasks();
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Unable to delete task");
     }
   };
 
-  // ============================================
-  //  DUE DATE STATUS
-  // ============================================
-  const getDueStatus = (task) => {
-    if (!task.due_date) return "none";
-
-    const today = new Date();
-    const due = new Date(task.due_date);
-    const diff = (due - today) / (1000 * 60 * 60 * 24);
-
-    if (task.completed) return "completed";
-    if (diff < 0) return "overdue";
-    if (diff <= 1) return "due-soon";
-    if (diff <= 7) return "due-week";
-    return "upcoming";
-  };
-
-  // ============================================
-  //  EDIT MODAL
-  // ============================================
-  const openEditModal = (task) => setEditingTask(task);
-  const closeEditModal = () => setEditingTask(null);
-
-  // ============================================
-  //  GROUPING LOGIC
-  // ============================================
-  const highPriority = tasks.filter((t) => t.priority === "high" && !t.completed);
-  const overdue = tasks.filter((t) => getDueStatus(t) === "overdue");
-  const dueSoon = tasks.filter((t) => getDueStatus(t) === "due-soon");
-  const dueWeek = tasks.filter((t) => getDueStatus(t) === "due-week");
-  const completedTasks = tasks.filter((t) => t.completed);
-  const otherTasks = tasks.filter(
-    (t) =>
-      !t.completed &&
-      t.priority !== "high" &&
-      getDueStatus(t) !== "overdue" &&
-      getDueStatus(t) !== "due-soon" &&
-      getDueStatus(t) !== "due-week"
-  );
-
-  // ============================================
-  //  REMINDER BANNER (toast only once)
-  // ============================================
-  useEffect(() => {
-    if (hasShownReminders || tasks.length === 0) return;
-
-    const overdueCount = overdue.length;
-    const dueSoonCount = dueSoon.length;
-
-    if (overdueCount === 0 && dueSoonCount === 0) return;
-
-    const parts = [];
-    if (overdueCount > 0)
-      parts.push(`${overdueCount} overdue task${overdueCount > 1 ? "s" : ""}`);
-    if (dueSoonCount > 0)
-      parts.push(`${dueSoonCount} task${dueSoonCount > 1 ? "s" : ""} due soon`);
-
-    toast(`⏰ You have ${parts.join(" and ")}`, { icon: "⚠️" });
-
-    setHasShownReminders(true);
-  }, [tasks, overdue.length, dueSoon.length, hasShownReminders]);
-
-  // ============================================
-  //  TASK ITEM RENDERER
-  // ============================================
+  // ============================
+  // RENDER TASK
+  // ============================
   const renderTask = (task) => {
-    const totalSubtasks = Number(task.total_subtasks || 0);
-    const completedSubtasks = Number(task.completed_subtasks || 0);
-    const hasSubtasks = totalSubtasks > 0;
+    const totalSubtasks = task.subtasks.length;
+    const completedSubtasks = task.subtasks.filter(s => s.completed).length;
 
     return (
       <li
         key={task.id}
-        className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow flex justify-between"
+        className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow"
       >
-        <div className="w-full pr-4">
-          <h2 className="font-semibold text-lg dark:text-white">{task.title}</h2>
-          <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
+        <h2 className="font-semibold text-lg text-gray-900 dark:text-white">
+          {task.title}
+        </h2>
 
-          {/* Priority Badge */}
-          <span
-            className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
-              task.priority === "high"
-                ? "bg-red-600 text-white"
-                : task.priority === "medium"
-                ? "bg-yellow-500 text-black"
-                : "bg-green-600 text-white"
-            }`}
-          >
-            {task.priority.toUpperCase()}
-          </span>
+        <p className="text-gray-600 dark:text-gray-300">
+          {task.description}
+        </p>
 
-          {/* Due Date */}
-          {task.due_date && (
-            <p
-              className={`mt-2 text-sm font-semibold ${
-                getDueStatus(task) === "overdue"
-                  ? "text-red-500"
-                  : getDueStatus(task) === "due-soon"
-                  ? "text-orange-400"
-                  : getDueStatus(task) === "due-week"
-                  ? "text-yellow-500"
-                  : "text-gray-500 dark:text-gray-300"
-              }`}
-            >
-              Due: {new Date(task.due_date).toLocaleDateString()}
+        {task.due_date && (
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            📅 Due: {new Date(task.due_date).toLocaleDateString()}
+          </p>
+        )}
+
+        <p
+          className={`mt-2 text-sm font-medium ${
+            task.completed
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {task.completed ? "✅ Completed" : "⏳ Pending"}
+        </p>
+
+        {totalSubtasks > 0 && (
+          <div className="mt-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+              🧩 {completedSubtasks}/{totalSubtasks} subtasks completed
             </p>
-          )}
-
-          {/* Completed/Pending */}
-          <span
-            className={`text-sm block mt-2 ${
-              task.completed ? "text-green-500" : "text-red-500"
-            }`}
-          >
-            {task.completed ? "Completed" : "Pending"}
-          </span>
-
-          {/* Subtask Progress */}
-          {hasSubtasks && (
-            <div className="mt-3">
-              <p className="text-sm dark:text-gray-300 mb-1">
-                {completedSubtasks}/{totalSubtasks} subtasks completed
-              </p>
-              <div className="w-full bg-gray-300 dark:bg-gray-700 rounded h-2 overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 transition-all"
-                  style={{
-                    width: `${
-                      (completedSubtasks / totalSubtasks) * 100
-                    }%`,
-                  }}
-                ></div>
-              </div>
+            <div className="w-full bg-gray-300 dark:bg-gray-700 rounded h-2">
+              <div
+                className="h-2 bg-blue-600 transition-all"
+                style={{
+                  width: `${(completedSubtasks / totalSubtasks) * 100}%`,
+                }}
+              />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Subtasks Component */}
-          <SubtaskList taskId={task.id} />
-        </div>
+        <SubtaskList
+          taskId={task.id}
+          subtasks={task.subtasks}
+          onSubtaskChange={fetchTasks}
+        />
 
-        <div className="flex flex-col gap-2 items-end">
+        <div className="flex gap-2 mt-4">
           <button
-            onClick={() => openEditModal(task)}
-            className="px-2 py-1 bg-green-600 text-white rounded"
+            onClick={() => setEditingTask(task)}
+            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
           >
-            Edit
+            ✏️ Edit
           </button>
 
           <button
             onClick={() => handleToggle(task)}
-            className="px-2 py-1 bg-yellow-500 text-white rounded"
+            className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded"
           >
-            Toggle
+            🔁 Toggle
           </button>
 
           <button
             onClick={() => handleDelete(task.id)}
-            className="px-2 py-1 bg-red-600 text-white rounded"
+            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
           >
-            Delete
+            🗑️ Delete
           </button>
         </div>
       </li>
     );
   };
 
-  // ============================================
-  //  LOADING STATE
-  // ============================================
-  if (loading)
-    return <p className="p-6 dark:text-gray-300">Loading tasks...</p>;
+  if (loading) {
+    return (
+      <p className="p-6 text-gray-700 dark:text-gray-300">
+        Loading tasks...
+      </p>
+    );
+  }
 
-  // ============================================
-  //  MAIN RETURN
-  // ============================================
+  const pendingTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
+
   return (
-    <div className="pb-20">
-      <h1 className="text-3xl font-bold mb-2 dark:text-white">Your Tasks</h1>
+    <div className="pb-20 text-gray-900 dark:text-gray-100">
+      <h1 className="text-3xl font-bold mb-4"> Task Dashboard</h1>
 
-      {/* Reminder Banner */}
-      {(overdue.length > 0 || dueSoon.length > 0) && (
-        <div className="mb-4 p-3 rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-sm dark:text-red-100">
-          {overdue.length > 0 && (
-            <p>⚠️ You have {overdue.length} overdue task(s).</p>
-          )}
-          {dueSoon.length > 0 && (
-            <p>⏰ {dueSoon.length} task(s) are due soon.</p>
-          )}
-        </div>
-      )}
+      {/* FILTER BUTTONS */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-3 py-1 rounded ${
+            filter === "all"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 dark:bg-gray-700"
+          }`}
+        >
+           All
+        </button>
 
-      {/* Create Task */}
-      <form onSubmit={handleCreateTask} className="mb-6 space-y-3">
+        <button
+          onClick={() => setFilter("pending")}
+          className={`px-3 py-1 rounded ${
+            filter === "pending"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 dark:bg-gray-700"
+          }`}
+        >
+          ⏳ Pending
+        </button>
+
+        <button
+          onClick={() => setFilter("completed")}
+          className={`px-3 py-1 rounded ${
+            filter === "completed"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 dark:bg-gray-700"
+          }`}
+        >
+          ✅ Completed
+        </button>
+      </div>
+
+      {/* CREATE TASK */}
+      <form onSubmit={handleCreateTask} className="space-y-3 mb-8">
         <input
-          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
-          placeholder="Task title"
+          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
+          placeholder="✍️ Task title"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
         />
 
         <textarea
-          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
-          placeholder="Task description (optional)"
+          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
+          placeholder=" Task description"
           value={newDesc}
           onChange={(e) => setNewDesc(e.target.value)}
         />
 
         <input
           type="date"
-          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
+          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
           value={newDueDate}
           onChange={(e) => setNewDueDate(e.target.value)}
         />
 
         <select
-          className="w-full p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
+          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
           value={newPriority}
           onChange={(e) => setNewPriority(e.target.value)}
         >
-          <option value="low">Low Priority</option>
-          <option value="medium">Medium Priority</option>
-          <option value="high">High Priority</option>
+          <option value="low">🟢 Low Priority</option>
+          <option value="medium">🟡 Medium Priority</option>
+          <option value="high">🔴 High Priority</option>
         </select>
 
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
         >
-          Add Task
+          ➕ Add Task
         </button>
       </form>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-3 mb-4">
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "all"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("all")}
-        >
-          All
-        </button>
+      {/* TASK LISTS */}
+      {filter === "all" && (
+        <>
+          <h2 className="text-xl font-bold mb-3"> All Tasks</h2>
+          <ul className="space-y-4">{tasks.map(renderTask)}</ul>
+        </>
+      )}
 
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "completed"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("completed")}
-        >
-          Completed
-        </button>
+      {filter === "pending" && (
+        <>
+          <h2 className="text-xl font-bold mb-3">⏳ Pending Tasks</h2>
+          <ul className="space-y-4">{pendingTasks.map(renderTask)}</ul>
+        </>
+      )}
 
-        <button
-          className={`px-3 py-1 rounded ${
-            filter === "pending"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 dark:bg-gray-700 dark:text-white"
-          }`}
-          onClick={() => setFilter("pending")}
-        >
-          Pending
-        </button>
-      </div>
-
-      {/* Search + Sort */}
-      <div className="flex gap-3 mb-6">
-        <input
-          placeholder="Search tasks..."
-          className="flex-1 p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <select
-          className="p-3 bg-gray-200 dark:bg-gray-800 dark:text-white rounded"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="priority-high">High Priority First</option>
-          <option value="priority-low">Low Priority First</option>
-          <option value="due-soon">Due Soon</option>
-          <option value="due-late">Due Later</option>
-        </select>
-      </div>
-
-      {/* Grouped Sections */}
-      <div className="space-y-8">
-        {highPriority.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-red-500 mb-3">🔥 High Priority</h2>
-            <ul className="space-y-3">{highPriority.map(renderTask)}</ul>
-          </section>
-        )}
-
-        {overdue.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-red-400 mb-3">⚠️ Overdue</h2>
-            <ul className="space-y-3">{overdue.map(renderTask)}</ul>
-          </section>
-        )}
-
-        {dueSoon.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-orange-400 mb-3">⏳ Due Soon</h2>
-            <ul className="space-y-3">{dueSoon.map(renderTask)}</ul>
-          </section>
-        )}
-
-        {dueWeek.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-yellow-500 mb-3">📅 Due This Week</h2>
-            <ul className="space-y-3">{dueWeek.map(renderTask)}</ul>
-          </section>
-        )}
-
-        {otherTasks.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-gray-400 mb-3">📌 Other Tasks</h2>
-            <ul className="space-y-3">{otherTasks.map(renderTask)}</ul>
-          </section>
-        )}
-
-        {completedTasks.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-green-500 mb-3">🟢 Completed</h2>
-            <ul className="space-y-3">{completedTasks.map(renderTask)}</ul>
-          </section>
-        )}
-      </div>
+      {filter === "completed" && (
+        <>
+          <h2 className="text-xl font-bold mb-3">✅ Completed Tasks</h2>
+          <ul className="space-y-4">{completedTasks.map(renderTask)}</ul>
+        </>
+      )}
 
       {editingTask && (
         <TaskEditModal
           task={editingTask}
-          onClose={closeEditModal}
+          onClose={() => setEditingTask(null)}
           onUpdated={fetchTasks}
         />
       )}
     </div>
   );
 }
-
 
 

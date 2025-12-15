@@ -1,75 +1,65 @@
-import { useEffect, useState } from "react";
 import axiosClient from "../api/axiosClient";
 import toast from "react-hot-toast";
+import { useState } from "react";
 
-export default function SubtaskList({ taskId }) {
-  const [subtasks, setSubtasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) {
   const [newTitle, setNewTitle] = useState("");
 
-  const fetchSubtasks = async () => {
-    try {
-      const res = await axiosClient.get(`/tasks/${taskId}/subtasks`);
-      setSubtasks(res.data);
-    } catch (err) {
-      console.error("Error loading subtasks:", err);
-      toast.error("Unable to load subtasks");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSubtasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId]);
-
+  // ============================
+  // ADD SUBTASK
+  // ============================
   const handleAddSubtask = async (e) => {
     e.preventDefault();
+
     if (!newTitle.trim()) {
       toast.error("Subtask title is required");
       return;
     }
 
     try {
-      const res = await axiosClient.post(`/tasks/${taskId}/subtasks`, {
+      await axiosClient.post(`/tasks/${taskId}/subtasks`, {
         title: newTitle.trim(),
       });
-      setSubtasks((prev) => [...prev, res.data]);
+
       setNewTitle("");
       toast.success("Subtask added");
+
+      onSubtaskChange(); // re-fetch tasks
     } catch (err) {
-      console.error("Error creating subtask:", err);
+      console.error(err);
       toast.error("Unable to create subtask");
     }
   };
 
+  // ============================
+  // TOGGLE SUBTASK
+  // ============================
   const handleToggle = async (subtask) => {
     try {
-      const res = await axiosClient.patch(`/tasks/subtasks/${subtask.id}/toggle`);
-      setSubtasks((prev) =>
-        prev.map((s) => (s.id === subtask.id ? res.data : s))
-      );
+      await axiosClient.patch(`/subtasks/${subtask.id}`, {
+        completed: !subtask.completed,
+      });
+
+      onSubtaskChange();
     } catch (err) {
-      console.error("Error toggling subtask:", err);
+      console.error(err);
       toast.error("Unable to update subtask");
     }
   };
 
+  // ============================
+  // DELETE SUBTASK
+  // ============================
   const handleDelete = async (id) => {
     try {
-      await axiosClient.delete(`/tasks/subtasks/${id}`);
-      setSubtasks((prev) => prev.filter((s) => s.id !== id));
+      await axiosClient.delete(`/subtasks/${id}`);
       toast.success("Subtask deleted");
+      onSubtaskChange();
     } catch (err) {
-      console.error("Error deleting subtask:", err);
+      console.error(err);
       toast.error("Unable to delete subtask");
     }
   };
-
-  if (loading) {
-    return <p className="text-xs text-gray-400 mt-2">Loading subtasks...</p>;
-  }
 
   return (
     <div className="mt-3 border-t border-gray-700 pt-3">
@@ -77,7 +67,6 @@ export default function SubtaskList({ taskId }) {
         Subtasks
       </h4>
 
-      {/* List */}
       {subtasks.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
           No subtasks yet.
@@ -97,11 +86,11 @@ export default function SubtaskList({ taskId }) {
                   className="h-4 w-4"
                 />
                 <span
-                  className={`${
+                  className={
                     sub.completed
                       ? "line-through text-gray-400"
                       : "text-gray-800 dark:text-gray-100"
-                  }`}
+                  }
                 >
                   {sub.title}
                 </span>
@@ -118,7 +107,6 @@ export default function SubtaskList({ taskId }) {
         </ul>
       )}
 
-      {/* Add subtask */}
       <form onSubmit={handleAddSubtask} className="flex gap-2">
         <input
           type="text"
@@ -137,3 +125,4 @@ export default function SubtaskList({ taskId }) {
     </div>
   );
 }
+
