@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import TaskEditModal from "../components/TaskEditModal";
 import SubtaskList from "../components/SubtaskList";
 import confetti from "canvas-confetti";
+import dayjs from "dayjs";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -46,27 +47,52 @@ export default function Dashboard() {
     fetchTasks();
   }, [filter, search, sort]);
 
+  // ============================
+  // CONFETTI ON AUTO-COMPLETE
+  // ============================
   useEffect(() => {
-  if (prevTasks.length === 0) {
-    setPrevTasks(tasks);
-    return;
-  }
-
-  tasks.forEach((task) => {
-    const prev = prevTasks.find((t) => t.id === task.id);
-
-    if (prev && !prev.completed && task.completed) {
-      confetti({
-        particleCount: 120,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+    if (prevTasks.length === 0) {
+      setPrevTasks(tasks);
+      return;
     }
-  });
 
-  setPrevTasks(tasks);
-}, [tasks]);
+    tasks.forEach((task) => {
+      const prev = prevTasks.find((t) => t.id === task.id);
 
+      if (prev && !prev.completed && task.completed) {
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      }
+    });
+
+    setPrevTasks(tasks);
+  }, [tasks]);
+
+  // ============================
+  // DASHBOARD STATS
+  // ============================
+  const today = dayjs();
+
+  const completedToday = tasks.filter((t) => t.completed);
+
+  const dueToday = tasks.filter(
+    (t) =>
+      t.due_date &&
+      !t.completed &&
+      dayjs(t.due_date).isSame(today, "day")
+  );
+
+  const overdueTasks = tasks.filter(
+    (t) =>
+      t.due_date &&
+      !t.completed &&
+      dayjs(t.due_date).isBefore(today, "day")
+  );
+
+  const totalTasks = tasks.length;
 
   // ============================
   // CREATE TASK
@@ -103,14 +129,14 @@ export default function Dashboard() {
   // ============================
   // TOGGLE TASK
   // ============================
-const handleToggle = async (task) => {
-  try {
-    await axiosClient.patch(`/tasks/${task.id}/toggle`);
-    fetchTasks();
-  } catch {
-    toast.error("Unable to update task");
-  }
-};
+  const handleToggle = async (task) => {
+    try {
+      await axiosClient.patch(`/tasks/${task.id}/toggle`);
+      fetchTasks();
+    } catch {
+      toast.error("Unable to update task");
+    }
+  };
 
   // ============================
   // DELETE TASK
@@ -147,7 +173,7 @@ const handleToggle = async (task) => {
 
         {task.due_date && (
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            📅 Due: {new Date(task.due_date).toLocaleDateString()}
+            📅 Due: {dayjs(task.due_date).format("MMM D, YYYY")}
           </p>
         )}
 
@@ -222,106 +248,62 @@ const handleToggle = async (task) => {
 
   return (
     <div className="pb-20 text-gray-900 dark:text-gray-100">
-      <h1 className="text-3xl font-bold mb-4"> Task Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-2">Task Dashboard</h1>
+
+      {/* DASHBOARD STATS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="p-4 rounded bg-green-100 dark:bg-green-900/30 text-center">
+          <p className="text-sm">Completed Today</p>
+          <p className="text-2xl font-bold">{completedToday.length}</p>
+        </div>
+
+        <div className="p-4 rounded bg-blue-100 dark:bg-blue-900/30 text-center">
+          <p className="text-sm">Due Today</p>
+          <p className="text-2xl font-bold">{dueToday.length}</p>
+        </div>
+
+        <div className="p-4 rounded bg-red-100 dark:bg-red-900/30 text-center">
+          <p className="text-sm">Overdue</p>
+          <p className="text-2xl font-bold">{overdueTasks.length}</p>
+        </div>
+
+        <div className="p-4 rounded bg-gray-200 dark:bg-gray-800 text-center">
+          <p className="text-sm">Total Tasks</p>
+          <p className="text-2xl font-bold">{totalTasks}</p>
+        </div>
+      </div>
 
       {/* FILTER BUTTONS */}
       <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-3 py-1 rounded ${
-            filter === "all"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-300 dark:bg-gray-700"
-          }`}
-        >
-           All
+        <button onClick={() => setFilter("all")} className="px-3 py-1 rounded bg-gray-300 dark:bg-gray-700">
+          All
         </button>
-
-        <button
-          onClick={() => setFilter("pending")}
-          className={`px-3 py-1 rounded ${
-            filter === "pending"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-300 dark:bg-gray-700"
-          }`}
-        >
+        <button onClick={() => setFilter("pending")} className="px-3 py-1 rounded bg-gray-300 dark:bg-gray-700">
           ⏳ Pending
         </button>
-
-        <button
-          onClick={() => setFilter("completed")}
-          className={`px-3 py-1 rounded ${
-            filter === "completed"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-300 dark:bg-gray-700"
-          }`}
-        >
+        <button onClick={() => setFilter("completed")} className="px-3 py-1 rounded bg-gray-300 dark:bg-gray-700">
           ✅ Completed
         </button>
       </div>
 
       {/* CREATE TASK */}
       <form onSubmit={handleCreateTask} className="space-y-3 mb-8">
-        <input
-          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-          placeholder="✍️ Task title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-        />
-
-        <textarea
-          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-          placeholder=" Task description"
-          value={newDesc}
-          onChange={(e) => setNewDesc(e.target.value)}
-        />
-
-        <input
-          type="date"
-          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-          value={newDueDate}
-          onChange={(e) => setNewDueDate(e.target.value)}
-        />
-
-        <select
-          className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-          value={newPriority}
-          onChange={(e) => setNewPriority(e.target.value)}
-        >
-          <option value="low">🟢 Low Priority</option>
-          <option value="medium">🟡 Medium Priority</option>
-          <option value="high">🔴 High Priority</option>
+        <input className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800" placeholder="✍️ Task title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+        <textarea className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800" placeholder="Task description" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+        <input type="date" className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+        <select className="w-full p-3 rounded bg-gray-200 dark:bg-gray-800" value={newPriority} onChange={(e) => setNewPriority(e.target.value)}>
+          <option value="low">🟢 Low</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="high">🔴 High</option>
         </select>
-
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-        >
+        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
           ➕ Add Task
         </button>
       </form>
 
-      {/* TASK LISTS */}
-      {filter === "all" && (
-        <>
-          <h2 className="text-xl font-bold mb-3"> All Tasks</h2>
-          <ul className="space-y-4">{tasks.map(renderTask)}</ul>
-        </>
-      )}
-
-      {filter === "pending" && (
-        <>
-          <h2 className="text-xl font-bold mb-3">⏳ Pending Tasks</h2>
-          <ul className="space-y-4">{pendingTasks.map(renderTask)}</ul>
-        </>
-      )}
-
-      {filter === "completed" && (
-        <>
-          <h2 className="text-xl font-bold mb-3">✅ Completed Tasks</h2>
-          <ul className="space-y-4">{completedTasks.map(renderTask)}</ul>
-        </>
-      )}
+      {filter === "all" && <ul className="space-y-4">{tasks.map(renderTask)}</ul>}
+      {filter === "pending" && <ul className="space-y-4">{pendingTasks.map(renderTask)}</ul>}
+      {filter === "completed" && <ul className="space-y-4">{completedTasks.map(renderTask)}</ul>}
 
       {editingTask && (
         <TaskEditModal
@@ -333,5 +315,3 @@ const handleToggle = async (task) => {
     </div>
   );
 }
-
-
