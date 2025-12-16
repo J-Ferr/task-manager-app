@@ -97,29 +97,37 @@ export default function CalendarPage() {
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const date = currentMonth.date(i + 1);
           const dayTasks = getTasksForDate(date);
+          const isToday = dayjs().isSame(date, "day");
+
 
           return (
             <div
               key={i}
               onClick={() => openDayTasks(date)}
-              className="border border-gray-300 dark:border-gray-700 rounded h-24 cursor-pointer 
-           bg-white dark:bg-gray-800 
-           hover:bg-blue-100 dark:hover:bg-gray-700 
-           p-1 transition-all"
+              className={`rounded h-24 cursor-pointer p-1 transition-all border
+                ${
+                  isToday
+                    ? "border-blue-500 bg-blue-100 dark:bg-blue-900/40"
+                    : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                }
+               hover:bg-blue-100 dark:hover:bg-gray-700`}
             >
+
               <div className="font-bold">{i + 1}</div>
 
               <div className="text-xs mt-1 space-y-1">
                 {dayTasks.slice(0, 2).map((task) => (
                   <div
                     key={task.id}
-                    className={`px-1 rounded truncate ${
-                      task.priority === "high"
+                    className={`px-1 rounded truncate text-xs
+                      ${task.completed ? "opacity-50 line-through" : ""}
+                      ${
+                        task.priority === "high"
                         ? "bg-red-600 text-white"
                         : task.priority === "medium"
                         ? "bg-yellow-500 text-black"
                         : "bg-green-600 text-white"
-                    }`}
+                      }`}
                   >
                     {task.title}
                   </div>
