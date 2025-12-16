@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 const subtaskRoutes = require("./routes/subtaskRoutes");
-app.use("/api/subtasks", subtaskRoutes);
+app.use("/api", subtaskRoutes);
 
 
 

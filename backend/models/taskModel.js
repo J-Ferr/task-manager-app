@@ -159,6 +159,21 @@ const getFilteredTasks = async ({ userId, search, completed, sort, priority, due
   const { rows } = await require("../db").query(query, values);
   return rows;
 };
+// Set task completion
+const setTaskCompleted = async (taskId, completed) => {
+  const result = await pool.query(
+    `
+    UPDATE tasks
+    SET completed = $1
+    WHERE id = $2
+    RETURNING *
+    `,
+    [completed, taskId]
+  );
+
+  return result.rows[0];
+};
+
 
 
 module.exports = {
@@ -167,5 +182,6 @@ module.exports = {
     updateTask,
     deleteTask,
     toggleTaskCompleted,
-    getFilteredTasks
+    getFilteredTasks,
+    setTaskCompleted
 };

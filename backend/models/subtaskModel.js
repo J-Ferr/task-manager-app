@@ -94,6 +94,20 @@ const deleteSubtask = async (subtaskId, userId) => {
   );
   return result.rows[0] || null;
 };
+// Subtask completion
+const areAllSubtasksCompleted = async (taskId) => {
+  const result = await pool.query(
+    `
+    SELECT COUNT(*) AS remaining
+    FROM subtasks
+    WHERE task_id = $1 AND completed = false
+    `,
+    [taskId]
+  );
+
+  return Number(result.rows[0].remaining) === 0;
+};
+
 
 module.exports = {
   getSubtasksForTask,
@@ -101,4 +115,5 @@ module.exports = {
   updateSubtask,
   toggleSubtaskCompleted,
   deleteSubtask,
+  areAllSubtasksCompleted
 };

@@ -8,6 +8,7 @@ import confetti from "canvas-confetti";
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [prevTasks, setPrevTasks] = useState([]);
 
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -45,6 +46,28 @@ export default function Dashboard() {
     fetchTasks();
   }, [filter, search, sort]);
 
+  useEffect(() => {
+  if (prevTasks.length === 0) {
+    setPrevTasks(tasks);
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const prev = prevTasks.find((t) => t.id === task.id);
+
+    if (prev && !prev.completed && task.completed) {
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+    }
+  });
+
+  setPrevTasks(tasks);
+}, [tasks]);
+
+
   // ============================
   // CREATE TASK
   // ============================
@@ -80,19 +103,14 @@ export default function Dashboard() {
   // ============================
   // TOGGLE TASK
   // ============================
-  const handleToggle = async (task) => {
-    try {
-      await axiosClient.patch(`/tasks/${task.id}/toggle`);
-
-      if (!task.completed) {
-        confetti({ particleCount: 90, spread: 70 });
-      }
-
-      fetchTasks();
-    } catch {
-      toast.error("Unable to update task");
-    }
-  };
+const handleToggle = async (task) => {
+  try {
+    await axiosClient.patch(`/tasks/${task.id}/toggle`);
+    fetchTasks();
+  } catch {
+    toast.error("Unable to update task");
+  }
+};
 
   // ============================
   // DELETE TASK

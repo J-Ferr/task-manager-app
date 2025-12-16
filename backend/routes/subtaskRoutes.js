@@ -5,13 +5,16 @@ const auth = require("../middleware/authMiddleware");
 const {
   createSubtask,
   updateSubtask,
-  deleteSubtask
+  deleteSubtask,
 } = require("../controllers/subtaskController");
 
 router.use(auth);
 
+// Create subtask under a task
 router.post("/tasks/:taskId/subtasks", createSubtask);
-router.patch("/:id", updateSubtask);
-router.delete("/:id", deleteSubtask);
+
+// Update / delete subtask directly
+router.patch("/subtasks/:id", updateSubtask);
+router.delete("/subtasks/:id", deleteSubtask);
 
 module.exports = router;

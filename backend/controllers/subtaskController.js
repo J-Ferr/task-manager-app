@@ -1,4 +1,5 @@
 const subtaskModel = require("../models/subtaskModel");
+const taskModel = require("../models/taskModel");
 
 // CREATE
 const createSubtask = async (req, res) => {
@@ -10,6 +11,9 @@ const createSubtask = async (req, res) => {
       title,
       req.user.id
     );
+
+        // NEW SUBTASK → TASK CANNOT BE COMPLETE
+    await taskModel.setTaskCompleted(req.params.taskId, false);
 
     res.status(201).json(subtask);
   } catch (err) {
@@ -33,6 +37,10 @@ const updateSubtask = async (req, res) => {
       return res.status(404).json({ error: "Subtask not found" });
     }
 
+    // AUTO-COMPLETE PARENT TASK
+    const allDone = await subtaskModel.areAllSubtasksCompleted(updated.task_id);
+    await taskModel.setTaskCompleted(updated.task_id, allDone);
+
     res.json(updated);
   } catch (err) {
     console.error("UPDATE SUBTASK ERROR:", err);
@@ -48,6 +56,10 @@ const deleteSubtask = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ error: "Subtask not found" });
     }
+
+        // RECHECK PARENT AFTER DELETE
+    const allDone = await subtaskModel.areAllSubtasksCompleted(deleted.task_id);
+    await taskModel.setTaskCompleted(deleted.task_id, allDone);
 
     res.json({ message: "Subtask deleted" });
   } catch (err) {
