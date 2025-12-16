@@ -1,103 +1,128 @@
-Task Manager App
-Project Description
+# 🗂️ Task Manager App
 
-A full-stack Task Manager app built with React, Node.js, Express, and PostgreSQL.
-Users can create, edit, delete, and mark tasks as complete. Optional features include categories, priority levels, due dates, and filtering.
+A full-stack task management application built with **React, Node.js, Express, and PostgreSQL**.  
+The app allows users to organize tasks, manage subtasks, track deadlines, and visualize progress through a calendar view.
 
-Features
+---
 
-View all tasks
+## 🚀 Project Description
 
-Create new tasks
 
-Edit existing tasks
+This project was built to practice and demonstrate full-stack development concepts, including REST APIs, authentication, relational databases, and modern frontend UI patterns.
 
-Delete tasks
+Users can create tasks, assign priorities and due dates, break tasks into subtasks, and track progress visually through both a dashboard and calendar view.
 
-Mark tasks as complete/incomplete
+---
 
-Responsive design
+## ✨ Features
 
-Optional: task categories, priority, due dates, filtering/search
 
-Tech Stack
+- ✅ Create, edit, delete, and complete tasks
+- 🧩 Subtasks with **automatic parent task completion**
+- 🎉 Confetti celebration when tasks are completed
+- 📊 Dashboard stats:
+  - Due Today
+  - Overdue
+  - Total Tasks
+- 📅 Calendar view with task deadlines
+- 🔍 Filter tasks by All / Pending / Completed
+- 🌙 Dark mode support
+- 🔐 JWT-based authentication
+- 📱 Responsive design
 
-Frontend: React
+---
 
-Backend: Node.js, Express
+##  Tech Stack
 
-Database: PostgreSQL
+### Frontend
+- React
+- Vite
+- Tailwind CSS
+- Axios
+- Day.js
 
-Other: CORS, dotenv, nodemon
+### Backend
+- Node.js
+- Express.js
+- PostgreSQL
+- JWT Authentication
+- CORS, dotenv, nodemon
 
-Project Structure
+---
+
+## 🗂️ Project Structure
+
 task-manager-app/
 ├─ backend/
-│   ├─ controllers/
-│   ├─ models/
-│   ├─ routes/
-│   ├─ db/
-│   ├─ middleware/
-│   ├─ server.js
-│   ├─ .env
-│   └─ package.json
+│ ├─ controllers/
+│ ├─ models/
+│ ├─ routes/
+│ ├─ middleware/
+│ ├─ db/
+│ ├─ server.js
+│ ├─ .env
+│ └─ package.json
 ├─ frontend/
-│   ├─ src/
-│   │    ├─ components/
-│   │    ├─ pages/
-│   │    └─ services/
-│   ├─ package.json
-│   └─ public/
+│ ├─ src/
+│ │ ├─ components/
+│ │ ├─ pages/
+│ │ └─ api/
+│ ├─ public/
+│ └─ package.json
+├─ screenshots/
 ├─ README.md
 └─ .gitignore
 
-Installation & Setup
-Backend
 
-Navigate to the backend folder:
+---
 
+## 📸 Screenshots
+
+### Dashboard
+![Dashboard](./screenshots/dashboard.png)
+![Dashboard](./screenshots/dashboard-darkmode.png)
+
+### Calendar View
+![Calendar](./screenshots/calendar.png)
+![calendar](./screenshots/calendar-darkmode.png)
+
+---
+
+## ⚙️ Installation & Setup
+
+### Backend
+
+```bash
 cd backend
-
-
-Install dependencies:
-
 npm install
-
-
-Create a .env file with your database URL and any environment variables.
-
-Start the backend server:
-
 npm run dev
+
+
+### Create a .env file inside backend:
+
+PORT=5000
+DATABASE_URL=your_postgres_url
+JWT_SECRET=your_secret_key
 
 Frontend
 
-Navigate to the frontend folder:
-
+Copy code
 cd frontend
-
-
-Install dependencies:
-
 npm install
+npm run dev
+
+### Future Improvements
+
+- Weekly productivity stats
+- Task streak tracking
+- Drag-and-drop task ordering
+- Notifications for upcoming deadlines
+
+👤 Author
+
+Armando Arellano
+Full-Stack Developer
 
 
-Start the frontend:
+---
 
-npm start
-
-Usage
-
-Open the app in your browser (usually at http://localhost:3000).
-
-Create, edit, delete, or complete tasks.
-
-Optional features like filtering and sorting can be used if implemented.
-
-Screenshots
-
-Add screenshots here once your app is ready.
-
-License
-
-This project is open source and available under the MIT License.
