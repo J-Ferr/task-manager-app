@@ -84,7 +84,12 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
                   checked={sub.completed}
                   onClick={(e) => e.stopPropagation()}
                   onChange={() => handleToggle(sub)}
-                  className="h-4 w-4"
+                  className="
+                  h-4 w-4
+                  transition-transform duration-150
+                  checked:scale-110
+                  cursor-pointer
+                  "
                 />
                 <span
                   className={

@@ -161,7 +161,13 @@ export default function Dashboard() {
     return (
       <li
         key={task.id}
-        className="border dark:border-gray-700 p-4 rounded bg-white dark:bg-gray-800 shadow"
+        className="
+          border dark:border-gray-700 p-4 rounded
+         bg-white dark:bg-gray-800 shadow
+          transition-all duration-200
+          hover:shadow-lg hover:-translate-y-0.5
+          animate-fadeIn
+        "
       >
         <h2 className="font-semibold text-lg text-gray-900 dark:text-white">
           {task.title}
