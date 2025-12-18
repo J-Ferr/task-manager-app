@@ -115,7 +115,13 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
       <form onSubmit={handleAddSubtask} className="flex gap-2">
         <input
           type="text"
-          className="flex-1 px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 dark:text-white"
+          className="
+            flex-1 px-3 py-2 text-xs rounded
+             bg-gray-100 text-gray-900
+             dark:bg-gray-200 dark:text-gray-900
+             placeholder-gray-500
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              "
           placeholder="Add a subtask..."
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
