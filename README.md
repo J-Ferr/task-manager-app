@@ -4,6 +4,11 @@ A full-stack task management application built with **React, Node.js, Express, a
 The app allows users to organize tasks, manage subtasks, track deadlines, and visualize progress through a calendar view.
 
 ---
+## 🎬 Demo
+
+![Task Manager Demo](./screenshots/demo.gif)
+
+
 
 ## 🚀 Project Description
 
