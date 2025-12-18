@@ -102,7 +102,15 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
                   e.stopPropagation();
                   handleDelete(sub.id);
                 }}
-                className="text-xs text-red-500 hover:underline"
+                className="
+                  text-xs text-red-500
+                 hover:text-red-700
+                  hover:underline
+                  focus:outline-none focus:ring-2 focus:ring-red-400
+                  rounded
+                  px-1
+                  transition
+                  "
               >
                 Delete
               </button>
@@ -128,7 +136,14 @@ export default function SubtaskList({ taskId, subtasks = [], onSubtaskChange }) 
         />
         <button
           type="submit"
-          className="px-2 py-1 text-xs bg-blue-600 text-white rounded"
+          className="
+            px-3 py-2 text-xs rounded
+           bg-blue-600 text-white
+           hover:bg-blue-700
+            active:scale-95
+            focus:outline-none focus:ring-2 focus:ring-blue-400
+            transition
+            "
         >
           Add
         </button>

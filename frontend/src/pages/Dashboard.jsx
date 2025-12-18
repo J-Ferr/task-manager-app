@@ -212,21 +212,39 @@ export default function Dashboard() {
         <div className="flex gap-2 mt-4">
           <button
             onClick={() => setEditingTask(task)}
-            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+            className="
+            px-3 py-1 rounded text-white
+           bg-green-600 hover:bg-green-700
+            active:scale-95
+            focus:outline-none focus:ring-2 focus:ring-green-400
+            transition
+            "
           >
             ✏️ Edit
           </button>
 
           <button
             onClick={() => handleToggle(task)}
-            className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded"
+            className="
+            px-3 py-1 rounded text-white
+           bg-yellow-500 hover:bg-yellow-600
+            active:scale-95
+            focus:outline-none focus:ring-2 focus:ring-yellow-400
+            transition
+            "
           >
             🔁 Toggle
           </button>
 
           <button
             onClick={() => handleDelete(task.id)}
-            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
+            className="
+            px-3 py-1 rounded text-white
+           bg-red-600 hover:bg-red-700
+            active:scale-95
+            focus:outline-none focus:ring-2 focus:ring-red-400
+            transition
+            "
           >
             🗑️ Delete
           </button>
